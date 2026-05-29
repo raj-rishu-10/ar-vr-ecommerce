@@ -74,7 +74,7 @@ export default function WebXREditor() {
       </button>
 
       {/* R3F Canvas */}
-      <Canvas style={{ position: 'absolute', inset: 0 }}>
+      <Canvas style={{ position: 'absolute', inset: 0 }} onPointerDownMissed={() => window.dispatchEvent(new Event('ar-tap'))}>
         <XR store={store}>
           <ambientLight intensity={1} />
           <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
