@@ -46,9 +46,9 @@ export default function XRHitTestCursor() {
 
   return (
     <group ref={ringRef} visible={isVisible}>
-      {/* Invisible hit box to catch clicks easily */}
-      <mesh onClick={handleTapToPlace} onPointerUp={handleTapToPlace}>
-        <cylinderGeometry args={[0.5, 0.5, 0.2, 32]} />
+      {/* Invisible hit box to catch clicks easily. Huge radius to catch screen taps. */}
+      <mesh onPointerDown={handleTapToPlace}>
+        <cylinderGeometry args={[5, 5, 0.1, 32]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
