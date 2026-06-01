@@ -10,18 +10,17 @@ export default function XRHitTestCursor() {
   const ringRef = useRef();
   const placeItem = useARSceneStore((s) => s.placeItem);
   const activeProduct = useARSceneStore((s) => s.activeProduct);
-  const [isVisible, setIsVisible] = useState(false);
 
   const handleTapToPlace = useCallback((event) => {
     // Only place if the ring is currently visible (a surface is found)
-    if (!ringRef.current || !activeProduct || !isVisible) return;
+    if (!ringRef.current || !activeProduct || !ringRef.current.visible) return;
     placeItem(
       activeProduct,
       ringRef.current.position.toArray(),
       [0, 0, 0],
       activeProduct.modelScale || [1, 1, 1]
     );
-  }, [activeProduct, placeItem, isVisible]);
+  }, [activeProduct, placeItem]);
 
   // Use native WebXR 'select' event instead of DOM events
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
@@ -40,15 +39,17 @@ export default function XRHitTestCursor() {
         // Keep the ring flat on the surface and force standard scale
         ringRef.current.quaternion.identity();
         ringRef.current.scale.set(1, 1, 1);
-        setIsVisible(true);
+        ringRef.current.visible = true;
+      } else {
+        ringRef.current.visible = false;
       }
     } else {
-      setIsVisible(false);
+      ringRef.current.visible = false;
     }
   }, 'viewer');
 
   return (
-    <group ref={ringRef} visible={isVisible}>
+    <group ref={ringRef} visible={false}>
       {/* Outer ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.15, 0.2, 32]} />

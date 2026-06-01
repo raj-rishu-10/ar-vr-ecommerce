@@ -39,10 +39,12 @@ function ARScene() {
       <IfInSessionMode allow="immersive-ar">
         <Suspense fallback={null}>
           <XRHitTestCursor />
-          {placedItems.map((item) => (
-            <XRPlacedProduct key={item.id} item={item} />
-          ))}
         </Suspense>
+        {placedItems.map((item) => (
+          <Suspense key={item.id} fallback={null}>
+            <XRPlacedProduct item={item} />
+          </Suspense>
+        ))}
       </IfInSessionMode>
 
       {/* Preview scene when NOT in AR */}
