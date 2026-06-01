@@ -279,12 +279,23 @@ export default function WebXREditor() {
 // Lives outside Canvas so it doesn't need XR context
 function _EnterARButtonDOM({ onEnter }) {
   const [supported, setSupported] = React.useState(undefined); // undefined = checking
+  const [errorMsg, setErrorMsg] = React.useState('');
 
   React.useEffect(() => {
-    if (!('xr' in navigator)) { setSupported(false); return; }
+    if (!('xr' in navigator)) { 
+      setSupported(false); 
+      setErrorMsg("navigator.xr is undefined (Not using Chrome, or not using HTTPS)");
+      return; 
+    }
     navigator.xr.isSessionSupported('immersive-ar')
-      .then(setSupported)
-      .catch(() => setSupported(false));
+      .then((isSupported) => {
+        setSupported(isSupported);
+        if (!isSupported) setErrorMsg("Device hardware reported false for immersive-ar");
+      })
+      .catch((err) => {
+        setSupported(false);
+        setErrorMsg(err.message || "Unknown error checking session support");
+      });
   }, []);
 
   // Hide the button once user is in a session (session running = canvas is the AR view)
@@ -303,12 +314,15 @@ function _EnterARButtonDOM({ onEnter }) {
       <div style={{
         background: 'rgba(10,10,15,0.9)', borderRadius: '16px', padding: '20px 28px',
         textAlign: 'center', border: '1px solid rgba(255,80,80,0.3)',
-        backdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(10px)', maxWidth: '90vw'
       }}>
         <div style={{ fontSize: '2rem', marginBottom: 8 }}>⚠️</div>
         <p style={{ color: '#ff7675', margin: '0 0 4px', fontWeight: 600 }}>AR Not Supported</p>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', margin: 0 }}>
-          Requires Android Chrome + ARCore
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', margin: 0, paddingBottom: '8px' }}>
+          Please use official Google Chrome.
+        </p>
+        <p style={{ color: '#f3a683', fontSize: '0.75rem', margin: 0, fontFamily: 'monospace', wordBreak: 'break-all' }}>
+          Debug: {errorMsg}
         </p>
       </div>
     );
