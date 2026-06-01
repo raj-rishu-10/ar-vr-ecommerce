@@ -119,16 +119,15 @@ export default function WebXREditor() {
 
   const handleEnterAR = useCallback(async () => {
     try {
+      const overlay = document.getElementById('ar-ui-overlay');
+      if (overlay) {
+        store.sessionInit.domOverlay = { root: overlay };
+      }
       await store.enterAR();
     } catch (err) {
       console.error('Failed to enter AR session:', err);
       alert('Could not start AR. Make sure you are on Android Chrome with ARCore installed.');
     }
-  }, []);
-
-  // Dispatch tap event on canvas click — lets XRHitTestCursor place items
-  const handleCanvasTap = useCallback(() => {
-    window.dispatchEvent(new Event('ar-tap'));
   }, []);
 
   return (
@@ -139,7 +138,6 @@ export default function WebXREditor() {
         style={{ position: 'absolute', inset: 0 }}
         gl={{ antialias: true, alpha: true }}
         camera={{ position: [0, 1.6, 3], fov: 70 }}
-        onPointerMissed={handleCanvasTap}
       >
         <XR store={store}>
           <ARScene />

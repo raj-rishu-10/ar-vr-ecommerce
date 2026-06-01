@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useXRHitTest } from '@react-three/xr';
+import { useXRHitTest, useXRInputSourceEvent } from '@react-three/xr';
 import { useARSceneStore } from '../../store/useARSceneStore';
 import * as THREE from 'three';
 
@@ -12,23 +12,20 @@ export default function XRHitTestCursor() {
   const activeProduct = useARSceneStore((s) => s.activeProduct);
   const [isVisible, setIsVisible] = useState(false);
 
-  const handleTapToPlace = useCallback(() => {
-    if (!ringRef.current || !activeProduct) return;
+  const handleTapToPlace = useCallback((event) => {
+    // Only place if the ring is currently visible (a surface is found)
+    if (!ringRef.current || !activeProduct || !isVisible) return;
     placeItem(
       activeProduct,
       ringRef.current.position.toArray(),
       [0, 0, 0],
       activeProduct.modelScale || [1, 1, 1]
     );
-  }, [activeProduct, placeItem]);
+  }, [activeProduct, placeItem, isVisible]);
 
-  useEffect(() => {
-    window.addEventListener('ar-tap', handleTapToPlace);
-    return () => window.removeEventListener('ar-tap', handleTapToPlace);
-  }, [handleTapToPlace]);
+  // Use native WebXR 'select' event instead of DOM events
+  useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
 
-  // Correct v6 API: useXRHitTest(fn, relativeTo)
-  // getWorldMatrix(target: Matrix4, result: XRHitTestResult) => boolean
   useXRHitTest((results, getWorldMatrix) => {
     if (!ringRef.current) return;
 
@@ -38,10 +35,11 @@ export default function XRHitTestCursor() {
         matrixHelper.decompose(
           ringRef.current.position,
           ringRef.current.quaternion,
-          ringRef.current.scale
+          new THREE.Vector3() // throw away scale, hit test scale can be zero
         );
-        // Keep the ring flat on the surface
+        // Keep the ring flat on the surface and force standard scale
         ringRef.current.quaternion.identity();
+        ringRef.current.scale.set(1, 1, 1);
         setIsVisible(true);
       }
     } else {
@@ -51,12 +49,6 @@ export default function XRHitTestCursor() {
 
   return (
     <group ref={ringRef} visible={isVisible}>
-      {/* Invisible hit box — large cylinder to catch screen taps */}
-      <mesh onPointerDown={handleTapToPlace}>
-        <cylinderGeometry args={[5, 5, 0.1, 32]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-
       {/* Outer ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.15, 0.2, 32]} />
