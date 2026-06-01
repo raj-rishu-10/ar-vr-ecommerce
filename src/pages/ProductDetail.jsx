@@ -34,7 +34,7 @@ export default function ProductDetail() {
 
   const handleViewInAR = () => {
     addObject(product);
-    navigate('/ar');
+    navigate('/ar', { state: { product } });
   };
 
   const discount = product.originalPrice
