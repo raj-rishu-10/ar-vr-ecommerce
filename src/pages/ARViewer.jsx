@@ -12,7 +12,6 @@ export default function ARViewer() {
   const { addItem, items } = useCartStore();
   const mvRef = useRef(null);
 
-  // If ProductDetail passed a product via state, use it; else default to first
   const initialProduct = location.state?.product
     ? AR_PRODUCTS.find((p) => p.id === location.state.product.id) || AR_PRODUCTS[0]
     : AR_PRODUCTS[0];
@@ -22,19 +21,16 @@ export default function ARViewer() {
   const [hasError, setHasError] = useState(false);
   const [toast, setToast] = useState('');
   const [isARMode, setIsARMode] = useState(false);
-  const [arSupported, setArSupported] = useState(undefined); // undefined = checking
+  const [arSupported, setArSupported] = useState(undefined);
+  const [showInfo, setShowInfo] = useState(false);
 
-  // ── Check AR support ──────────────────────────────────────
   useEffect(() => {
-    // model-viewer handles AR via Scene Viewer (Android) / Quick Look (iOS)
-    // Check if either is likely available
     const ua = navigator.userAgent;
     const isAndroid = /android/i.test(ua);
     const isIOS = /iphone|ipad|ipod/i.test(ua);
     setArSupported(isAndroid || isIOS);
   }, []);
 
-  // ── model-viewer event listeners ──────────────────────────
   useEffect(() => {
     const mv = mvRef.current;
     if (!mv) return;
@@ -42,7 +38,6 @@ export default function ARViewer() {
     const onLoad = () => { setIsLoading(false); setHasError(false); };
     const onError = () => { setIsLoading(false); setHasError(true); };
     const onArStatus = (e) => {
-      // ar-status values: 'not-presenting' | 'session-started' | 'object-placed' | 'failed'
       setIsARMode(e.detail.status === 'session-started' || e.detail.status === 'object-placed');
     };
 
@@ -55,9 +50,8 @@ export default function ARViewer() {
       mv.removeEventListener('error', onError);
       mv.removeEventListener('ar-status', onArStatus);
     };
-  }, [activeProduct]); // re-attach when product changes (new model-viewer load cycle)
+  }, [activeProduct]);
 
-  // ── Switch product — reset loading state ──────────────────
   const handleSelectProduct = useCallback((p) => {
     if (p.id === activeProduct.id) return;
     setIsLoading(true);
@@ -65,10 +59,9 @@ export default function ARViewer() {
     setActiveProduct(p);
   }, [activeProduct.id]);
 
-  // ── Cart actions ──────────────────────────────────────────
   const showToast = useCallback((msg) => {
     setToast(msg);
-    setTimeout(() => setToast(''), 2500);
+    setTimeout(() => setToast(''), 3000);
   }, []);
 
   const handleAddToCart = useCallback(() => {
@@ -78,7 +71,6 @@ export default function ARViewer() {
 
   const handleCheckout = useCallback(() => navigate('/checkout'), [navigate]);
 
-  // ── Trigger native AR ─────────────────────────────────────
   const activateAR = useCallback(() => {
     const mv = mvRef.current;
     if (!mv) return;
@@ -92,100 +84,9 @@ export default function ARViewer() {
   const cartCount = items.reduce((s, i) => s + i.qty, 0);
 
   return (
-    <div className="ar-fullscreen-page">
-
-      {/* ── model-viewer: full-height 3D viewer ──────────── */}
-      <model-viewer
-        ref={mvRef}
-        key={activeProduct.id}           /* force remount on product change */
-        src={activeProduct.glbModel}
-        alt={`3D model of ${activeProduct.name}`}
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        ar-scale="auto"
-        ar-placement="floor"
-        camera-controls
-        touch-action="pan-y"
-        shadow-intensity="1.2"
-        shadow-softness="0.8"
-        environment-image="neutral"
-        exposure="1.1"
-        auto-rotate
-        auto-rotate-delay="3000"
-        rotation-per-second="20deg"
-        interaction-prompt="none"
-        style={{
-          width: '100%',
-          flex: 1,
-          background: 'linear-gradient(160deg, #1a1a2e 0%, #0a0a0f 60%)',
-          '--poster-color': 'transparent',
-        }}
-      >
-        {/* Hidden native AR button — we use our own */}
-        <button slot="ar-button" style={{ display: 'none' }} aria-hidden="true" />
-      </model-viewer>
-
-      {/* ── Loading overlay ───────────────────────────────── */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            style={{
-              position: 'absolute', inset: 0, zIndex: 50,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(160deg, #1a1a2e 0%, #0a0a0f 100%)',
-              pointerEvents: 'none',
-            }}
-          >
-            <div style={{
-              width: 64, height: 64, borderRadius: '50%',
-              border: '3px solid rgba(108,92,231,0.2)',
-              borderTopColor: '#6c5ce7',
-              animation: 'spin 0.8s linear infinite',
-              marginBottom: 20,
-            }} />
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: 0 }}>
-              Loading 3D model…
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Error overlay ─────────────────────────────────── */}
-      <AnimatePresence>
-        {hasError && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: 'absolute', inset: 0, zIndex: 50,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(10,10,15,0.95)', textAlign: 'center', padding: '2rem',
-            }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚠️</div>
-            <h3 style={{ color: 'white', marginBottom: 8 }}>Model failed to load</h3>
-            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 20 }}>
-              Could not load the 3D model for {activeProduct.name}
-            </p>
-            <button
-              onClick={() => { setHasError(false); setIsLoading(true); }}
-              style={{
-                padding: '10px 24px', borderRadius: 20,
-                background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
-                color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600,
-              }}
-            >
-              Retry
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Top bar ───────────────────────────────────────── */}
+    <div className="ar-fullscreen-page" style={{ position: 'fixed', inset: 0, background: '#0a0a0f', zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
+      
+      {/* ── Top Navigation Bar ───────────────────────────────── */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
         padding: 'max(env(safe-area-inset-top, 16px), 16px) 16px 14px',
@@ -193,38 +94,38 @@ export default function ARViewer() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         pointerEvents: 'none',
       }}>
-        {/* Back */}
         <button
           onClick={() => navigate(-1)}
           style={{
             pointerEvents: 'auto',
-            width: 42, height: 42, borderRadius: '50%',
+            width: 44, height: 44, borderRadius: '50%',
             border: '1px solid rgba(255,255,255,0.12)',
             background: 'rgba(26,26,46,0.85)', backdropFilter: 'blur(12px)',
-            color: 'white', cursor: 'pointer', fontSize: '1.1rem',
+            color: 'white', cursor: 'pointer', fontSize: '1.2rem',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
           }}
         >←</button>
 
-        {/* Center badge */}
         <div style={{
-          pointerEvents: 'none',
+          pointerEvents: 'auto', cursor: 'pointer',
           background: 'rgba(26,26,46,0.85)', backdropFilter: 'blur(12px)',
           border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 50, padding: '6px 16px',
-          fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)',
-          fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
-        }}>
+          borderRadius: 50, padding: '8px 20px',
+          fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)',
+          fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          transition: 'all 0.3s ease',
+        }} onClick={() => setShowInfo(!showInfo)}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%',
             background: isLoading ? '#fdcb6e' : '#00b894',
-            display: 'inline-block', flexShrink: 0,
+            display: 'inline-block',
           }} />
-          {isLoading ? 'Loading…' : `AR Viewer · ${activeProduct.name}`}
+          {isLoading ? 'Loading 3D...' : '3D Viewer'}
+          <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>ℹ️</span>
         </div>
 
-        {/* Cart / Checkout */}
         {cartCount > 0 ? (
           <motion.button
             initial={{ scale: 0 }} animate={{ scale: 1 }}
@@ -233,159 +134,204 @@ export default function ARViewer() {
               pointerEvents: 'auto',
               background: 'linear-gradient(135deg, #00b894, #00cec9)',
               border: 'none', borderRadius: 50,
-              padding: '7px 14px', color: 'white',
-              fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
+              padding: '10px 18px', color: 'white',
+              fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: '0 4px 12px rgba(0,184,148,0.3)',
             }}
           >
-            🛒 {cartCount} · Checkout
+            🛒 {cartCount}
           </motion.button>
-        ) : (
-          <div style={{ width: 42 }} />  /* spacer to keep layout balanced */
-        )}
+        ) : <div style={{ width: 44 }} />}
       </div>
 
-      {/* ── Bottom panel ──────────────────────────────────── */}
+      {/* ── Product Info Panel (Toggleable) ────────────────── */}
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{
+              position: 'absolute', top: 'calc(max(env(safe-area-inset-top, 16px), 16px) + 60px)',
+              left: '50%', transform: 'translateX(-50%)', zIndex: 19,
+              background: 'rgba(26,26,46,0.95)', backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 16, padding: '20px', width: '90%', maxWidth: 400,
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5)', pointerEvents: 'auto'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white' }}>{activeProduct.name}</h3>
+              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#a29bfe' }}>${activeProduct.price}</span>
+            </div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', marginBottom: 16, lineHeight: 1.5 }}>
+              {activeProduct.description}
+            </p>
+            <div style={{ display: 'flex', gap: 12, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Dimensions</div>
+                <div style={{ fontSize: '0.85rem', color: 'white', fontWeight: 500 }}>
+                  {activeProduct.dimensions?.width}x{activeProduct.dimensions?.height}x{activeProduct.dimensions?.depth} cm
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Material</div>
+                <div style={{ fontSize: '0.85rem', color: 'white', fontWeight: 500 }}>Premium Grade</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── 3D Model Viewer ─────────────────────────────────── */}
+      <model-viewer
+        ref={mvRef}
+        key={activeProduct.id}
+        src={activeProduct.glbModel}
+        alt={`3D model of ${activeProduct.name}`}
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-scale="auto"
+        ar-placement="floor"
+        camera-controls
+        touch-action="pan-y"
+        shadow-intensity="1.5"
+        shadow-softness="1"
+        environment-image="neutral"
+        exposure="1.2"
+        auto-rotate
+        auto-rotate-delay="3000"
+        rotation-per-second="15deg"
+        interaction-prompt="none"
+        style={{
+          width: '100%',
+          flex: 1,
+          background: 'linear-gradient(180deg, #12121a 0%, #0a0a0f 100%)',
+          '--poster-color': 'transparent',
+          outline: 'none'
+        }}
+      >
+        <button slot="ar-button" style={{ display: 'none' }} />
+      </model-viewer>
+
+      {/* ── Overlays ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 10,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              pointerEvents: 'none', background: 'rgba(10,10,15,0.7)', backdropFilter: 'blur(4px)'
+            }}
+          >
+            <div className="spinner-border" style={{ color: '#6c5ce7', width: '3rem', height: '3rem' }} />
+            <div style={{ marginTop: 16, color: 'white', fontWeight: 500, letterSpacing: 1 }}>Loading Premium Model...</div>
+          </motion.div>
+        )}
+        
+        {hasError && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 15,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(10,10,15,0.95)', padding: '2rem', textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>⚠️</div>
+            <h3 style={{ color: 'white' }}>Failed to load model</h3>
+            <button onClick={() => { setHasError(false); setIsLoading(true); }} style={{
+              marginTop: 24, padding: '12px 32px', borderRadius: 30,
+              background: 'var(--gradient-primary)', color: 'white', border: 'none',
+              fontWeight: 600, cursor: 'pointer'
+            }}>Retry</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Bottom Controls ─────────────────────────────────── */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
         background: 'linear-gradient(to top, rgba(10,10,15,0.98) 70%, transparent)',
-        padding: '0 16px max(env(safe-area-inset-bottom, 20px), 20px)',
+        padding: '0 16px max(env(safe-area-inset-bottom, 24px), 24px)',
         pointerEvents: 'none',
       }}>
         <div style={{ maxWidth: 600, margin: '0 auto', pointerEvents: 'auto' }}>
-
-          {/* Active product info + AR button */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            marginBottom: 14, paddingTop: 16,
-          }}>
-            <img
-              src={activeProduct.image}
-              alt={activeProduct.name}
-              style={{
-                width: 54, height: 54, borderRadius: 12, objectFit: 'cover',
-                border: '2px solid rgba(108,92,231,0.5)', flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontWeight: 700, fontSize: '0.95rem', color: 'white',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                marginBottom: 2,
-              }}>
-                {activeProduct.name}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#a29bfe', fontWeight: 700, fontSize: '1rem' }}>
-                  ${activeProduct.price.toFixed(2)}
-                </span>
-                {activeProduct.originalPrice && (
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', textDecoration: 'line-through' }}>
-                    ${activeProduct.originalPrice.toFixed(2)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* AR launch button — only shown on mobile */}
+          
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
             {arSupported !== false && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={activateAR}
                 disabled={isLoading}
                 style={{
-                  background: isLoading
-                    ? 'rgba(60,60,60,0.7)'
-                    : 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
-                  border: 'none', borderRadius: 14,
-                  padding: '10px 16px',
-                  color: 'white', fontWeight: 700, fontSize: '0.82rem',
-                  cursor: isLoading ? 'not-allowed' : 'pointer', flexShrink: 0,
-                  boxShadow: isLoading ? 'none' : '0 0 20px rgba(108,92,231,0.4)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex', alignItems: 'center', gap: 6,
+                  flex: 1, padding: '16px', borderRadius: 16, border: 'none',
+                  background: isLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
+                  color: isLoading ? 'rgba(255,255,255,0.4)' : 'white',
+                  fontWeight: 700, fontSize: '1.05rem', cursor: isLoading ? 'not-allowed' : 'pointer',
+                  boxShadow: isLoading ? 'none' : '0 10px 30px rgba(108,92,231,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                 }}
               >
-                📱 Place in Room
-              </button>
+                📱 View in Space
+              </motion.button>
             )}
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={handleAddToCart}
+              style={{
+                flex: 1, padding: '16px', borderRadius: 16, border: 'none',
+                background: 'rgba(26,26,46,0.8)', backdropFilter: 'blur(10px)',
+                color: 'white', fontWeight: 700, fontSize: '1.05rem', cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+              }}
+            >
+              🛒 Add to Cart
+            </motion.button>
           </div>
 
-          {/* Product carousel */}
-          <div style={{ marginBottom: 14 }}>
-            <div className="ar-product-carousel">
+          <div style={{ background: 'rgba(26,26,46,0.5)', borderRadius: 20, padding: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+              More Products
+            </div>
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
               {AR_PRODUCTS.map((p) => (
                 <motion.button
                   key={p.id}
                   onClick={() => handleSelectProduct(p)}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   style={{
-                    flexShrink: 0,
-                    width: 64, height: 64,
-                    borderRadius: 12, padding: 0, overflow: 'hidden',
-                    border: activeProduct.id === p.id
-                      ? '2.5px solid #6c5ce7'
-                      : '2px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(26,26,46,0.7)',
-                    cursor: 'pointer', position: 'relative',
-                    boxShadow: activeProduct.id === p.id
-                      ? '0 0 16px rgba(108,92,231,0.5)' : 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    flexShrink: 0, width: 72, height: 72, borderRadius: 14, padding: 0,
+                    border: activeProduct.id === p.id ? '2px solid #00cec9' : '2px solid transparent',
+                    background: 'rgba(255,255,255,0.05)', cursor: 'pointer', overflow: 'hidden',
+                    boxShadow: activeProduct.id === p.id ? '0 0 20px rgba(0,206,201,0.3)' : 'none',
                   }}
                 >
-                  <img
-                    src={p.image} alt={p.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  {activeProduct.id === p.id && (
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      background: 'rgba(108,92,231,0.25)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1.1rem',
-                    }}>✓</div>
-                  )}
+                  <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </motion.button>
               ))}
             </div>
           </div>
-
-          {/* Add to cart CTA */}
-          <motion.button
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-            onClick={handleAddToCart}
-            style={{
-              width: '100%',
-              background: 'linear-gradient(135deg, #00b894, #00cec9)',
-              border: 'none', borderRadius: 16,
-              padding: '14px 16px',
-              color: 'white', fontWeight: 700, fontSize: '1rem',
-              cursor: 'pointer',
-              boxShadow: '0 0 30px rgba(0,184,148,0.35)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            🛒 Add {activeProduct.name} to Cart
-          </motion.button>
         </div>
       </div>
 
-      {/* ── Toast notification ────────────────────────────── */}
+      {/* ── Toast ───────────────────────────────────────────── */}
       <AnimatePresence>
         {toast && (
           <motion.div
-            key={toast}
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -16, scale: 0.9 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
             style={{
-              position: 'absolute', bottom: 200, left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(26,26,46,0.95)', backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(108,92,231,0.4)',
-              borderRadius: 50, padding: '10px 20px',
-              color: 'white', fontWeight: 600, fontSize: '0.85rem',
-              whiteSpace: 'nowrap', zIndex: 30, pointerEvents: 'none',
-              boxShadow: '0 4px 30px rgba(0,0,0,0.5)',
+              position: 'absolute', bottom: 'calc(max(env(safe-area-inset-bottom, 24px), 24px) + 240px)', left: '50%', transform: 'translateX(-50%)',
+              background: 'rgba(0,184,148,0.95)', backdropFilter: 'blur(10px)',
+              padding: '12px 24px', borderRadius: 30, color: 'white', fontWeight: 600,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)', zIndex: 100, pointerEvents: 'none'
             }}
           >
             {toast}
@@ -393,10 +339,6 @@ export default function ARViewer() {
         )}
       </AnimatePresence>
 
-      {/* ── CSS for spinner ───────────────────────────────── */}
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }
