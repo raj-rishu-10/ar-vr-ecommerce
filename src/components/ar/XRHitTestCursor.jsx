@@ -1,10 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useXRHitTest, useXRInputSourceEvent } from '@react-three/xr';
+import { useXRInputSourceEvent, useXRStore } from '@react-three/xr';
+import { useFrame } from '@react-three/fiber';
+import { useStore } from 'zustand';
 import { useARSceneStore } from '../../store/useARSceneStore';
 import * as THREE from 'three';
-
-// Reusable Matrix4 to avoid creating a new one every frame
-const matrixHelper = new THREE.Matrix4();
 
 export default function XRHitTestCursor() {
   const ringRef = useRef();
@@ -17,7 +16,7 @@ export default function XRHitTestCursor() {
     placeItem(
       activeProduct,
       ringRef.current.position.toArray(),
-      [0, 0, 0],
+      [0, 0, 0], // ARCore often provides weird rotations, we keep objects upright
       activeProduct.modelScale || [1, 1, 1]
     );
   }, [activeProduct, placeItem]);
@@ -28,32 +27,73 @@ export default function XRHitTestCursor() {
   const setStabilized = useARSceneStore((s) => s.setStabilized);
   const isStabilized = useARSceneStore((s) => s.isStabilized);
 
-  useXRHitTest((results, getWorldMatrix) => {
-    if (!ringRef.current) return;
+  const store = useXRStore();
+  const session = useStore(store, (s) => s.session);
+  const hitTestSourceRef = useRef(null);
+  const localSpaceRef = useRef(null);
 
-    if (results.length > 0) {
+  // Setup raw WebXR hit testing directly from the Codelab
+  useEffect(() => {
+    if (!session) return;
+    
+    let active = true;
+    (async () => {
+      try {
+        const viewerSpace = await session.requestReferenceSpace('viewer');
+        const localSpace = await session.requestReferenceSpace('local');
+        if (!active) return;
+        localSpaceRef.current = localSpace;
+        
+        const source = await session.requestHitTestSource({ space: viewerSpace });
+        if (!active) return;
+        hitTestSourceRef.current = source;
+      } catch (err) {
+        console.error("Failed to setup hit test source", err);
+      }
+    })();
+
+    return () => {
+      active = false;
+      if (hitTestSourceRef.current) {
+        hitTestSourceRef.current.cancel();
+        hitTestSourceRef.current = null;
+      }
+    };
+  }, [session]);
+
+  // Execute raw WebXR hit test every frame
+  useFrame((state, delta, frame) => {
+    if (!ringRef.current) return;
+    
+    if (!frame || !hitTestSourceRef.current || !localSpaceRef.current) {
+      ringRef.current.visible = false;
+      return;
+    }
+
+    const hitTestResults = frame.getHitTestResults(hitTestSourceRef.current);
+    
+    if (hitTestResults.length > 0) {
       if (!isStabilized) {
         setStabilized(true);
       }
       
-      const success = getWorldMatrix(matrixHelper, results[0]);
-      if (success) {
-        matrixHelper.decompose(
-          ringRef.current.position,
-          ringRef.current.quaternion,
-          new THREE.Vector3() // throw away scale, hit test scale can be zero
-        );
-        // Keep the ring flat on the surface and force standard scale
-        ringRef.current.quaternion.identity();
-        ringRef.current.scale.set(1, 1, 1);
+      const hitPose = hitTestResults[0].getPose(localSpaceRef.current);
+      if (hitPose) {
         ringRef.current.visible = true;
+        ringRef.current.position.set(
+          hitPose.transform.position.x,
+          hitPose.transform.position.y,
+          hitPose.transform.position.z
+        );
+        // We keep it flat on the floor (identity rotation) for furniture
+        ringRef.current.quaternion.identity(); 
       } else {
         ringRef.current.visible = false;
       }
     } else {
       ringRef.current.visible = false;
     }
-  }, 'viewer');
+  });
 
   return (
     <group ref={ringRef} visible={false}>
