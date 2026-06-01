@@ -164,6 +164,14 @@ export default function WebXREditor() {
           zIndex: 10,
         }}
       >
+        {/* INVISIBLE HITBOX FOR PLACEMENT ON ANDROID */}
+        {inSession && (
+          <div 
+            style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', zIndex: -1 }}
+            onClick={() => window.dispatchEvent(new Event('ar-tap'))}
+          />
+        )}
+
         {/* TOP BAR */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', pointerEvents: 'auto' }}>
           <button

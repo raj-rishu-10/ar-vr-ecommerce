@@ -14,7 +14,10 @@ export default function XRHitTestCursor() {
 
   const handleTapToPlace = useCallback((event) => {
     // Only place if the ring is currently visible (a surface is found)
-    if (!ringRef.current || !activeProduct || !ringRef.current.visible) return;
+    if (!ringRef.current || !activeProduct || !ringRef.current.visible) {
+      alert("No surface detected! Point at the floor and wait for the cyan ring to appear before tapping.");
+      return;
+    }
     placeItem(
       activeProduct,
       ringRef.current.position.toArray(),
@@ -25,6 +28,14 @@ export default function XRHitTestCursor() {
 
   // Use native WebXR 'select' event instead of DOM events
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
+
+  // Fallback: Listen for custom DOM event from the overlay
+  // This bypasses bugs on OnePlus/Oppo phones where dom-overlay swallows the WebXR select event
+  useEffect(() => {
+    const onArTap = () => handleTapToPlace();
+    window.addEventListener('ar-tap', onArTap);
+    return () => window.removeEventListener('ar-tap', onArTap);
+  }, [handleTapToPlace]);
 
   const setStabilized = useARSceneStore((s) => s.setStabilized);
   const isStabilized = useARSceneStore((s) => s.isStabilized);
