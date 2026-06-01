@@ -136,7 +136,7 @@ export default function WebXREditor() {
       await store.enterAR();
     } catch (err) {
       console.error('Failed to enter AR session:', err);
-      alert('Could not start AR. Make sure you are on Android Chrome with ARCore installed.');
+      alert(`Failed to start AR: ${err.message || err.toString()}`);
     }
   }, []);
 
