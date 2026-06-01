@@ -11,8 +11,13 @@ export default defineConfig(({ command }) => ({
     command === 'serve' && basicSsl(),
   ].filter(Boolean),
   server: {
-    host: true,   // bind to 0.0.0.0 — accessible on LAN/network IP
+    host: true,
     port: 5173,
     strictPort: true,
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+    globals: true,
   },
 }))
