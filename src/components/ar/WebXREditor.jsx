@@ -111,6 +111,14 @@ export default function WebXREditor() {
   const saveScene = useARSceneStore((s) => s.saveScene);
   const loadScene = useARSceneStore((s) => s.loadScene);
   const placedItems = useARSceneStore((s) => s.placedItems);
+  const isStabilized = useARSceneStore((s) => s.isStabilized);
+
+  const [inSession, setInSession] = React.useState(false);
+  React.useEffect(() => {
+    return store.subscribe((state) => {
+      setInSession(state.session != null);
+    });
+  }, []);
 
   // Initialize first product if none selected
   React.useEffect(() => {
@@ -185,6 +193,20 @@ export default function WebXREditor() {
               works outside Canvas via the store */}
           <_EnterARButtonDOM onEnter={handleEnterAR} />
         </div>
+
+        {/* STABILIZATION PROMPT */}
+        {inSession && !isStabilized && (
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            background: 'rgba(0,0,0,0.7)', color: 'white', padding: '16px 32px', borderRadius: '30px',
+            backdropFilter: 'blur(10px)', textAlign: 'center', pointerEvents: 'none',
+            border: '1px solid rgba(255,255,255,0.2)'
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '8px', animation: 'spin 2s linear infinite' }}>🔄</div>
+            <div style={{ fontWeight: 600 }}>Move phone around</div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>Scan the floor to place items</div>
+          </div>
+        )}
 
         {/* MIDDLE RIGHT — item tools */}
         {activeItemId && (

@@ -5,6 +5,9 @@ export const useARSceneStore = create((set, get) => ({
   history: [], // Stack of placedItems states for Undo
   activeItemId: null,
   activeProduct: null, // The product currently selected in the bottom carousel to be placed
+  isStabilized: false, // Whether ARCore has detected a surface
+
+  setStabilized: (stabilized) => set({ isStabilized: stabilized }),
   
   setActiveProduct: (product) => set({ activeProduct: product }),
 

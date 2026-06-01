@@ -25,10 +25,17 @@ export default function XRHitTestCursor() {
   // Use native WebXR 'select' event instead of DOM events
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
 
+  const setStabilized = useARSceneStore((s) => s.setStabilized);
+  const isStabilized = useARSceneStore((s) => s.isStabilized);
+
   useXRHitTest((results, getWorldMatrix) => {
     if (!ringRef.current) return;
 
     if (results.length > 0) {
+      if (!isStabilized) {
+        setStabilized(true);
+      }
+      
       const success = getWorldMatrix(matrixHelper, results[0]);
       if (success) {
         matrixHelper.decompose(

@@ -975,3 +975,4 @@ model-viewer::part(default-ar-button) {
   z-index: 1100;
 }
 
+@keyframes spin { 100% { transform: rotate(360deg); } }
