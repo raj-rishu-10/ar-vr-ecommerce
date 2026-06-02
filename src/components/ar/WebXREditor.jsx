@@ -63,7 +63,14 @@ function ARScene({ previewProduct }) {
   return (
     <>
       <ambientLight intensity={1.5} />
-      <directionalLight position={[5, 10, 5]} intensity={1.2} castShadow />
+      <directionalLight 
+        position={[2, 5, 2]} 
+        intensity={1.5} 
+        castShadow 
+        shadow-mapSize-width={1024} 
+        shadow-mapSize-height={1024} 
+        shadow-bias={-0.0001}
+      />
       <XROrigin />
 
       {/* AR session content */}
@@ -145,6 +152,7 @@ export default function WebXREditor() {
   const setActiveProduct = useARSceneStore((s) => s.setActiveProduct);
   const activeItemId     = useARSceneStore((s) => s.activeItemId);
   const deleteItem       = useARSceneStore((s) => s.deleteItem);
+  const clearScene       = useARSceneStore((s) => s.clearScene);
   const duplicateItem    = useARSceneStore((s) => s.duplicateItem);
   const undo             = useARSceneStore((s) => s.undo);
   const saveScene        = useARSceneStore((s) => s.saveScene);
@@ -187,6 +195,7 @@ export default function WebXREditor() {
       <CanvasErrorBoundary>
         <Canvas
           className="canvas-container"
+          shadows
           gl={{ antialias:true, alpha:false }}
           camera={{ position:[0, 1.2, 2.5], fov:60 }}
           onCreated={() => setCanvasReady(true)}
@@ -229,6 +238,9 @@ export default function WebXREditor() {
 
           <div className="toolbar">
             <button id="btn-undo" className="btn-tool undo" onClick={undo}>↩ Undo</button>
+            <button className="btn-tool clear" onClick={() => {
+              if (window.confirm("Are you sure you want to clear all objects?")) clearScene();
+            }}>🧹 Clear</button>
             <button id="btn-save" className="btn-tool save" onClick={saveScene}>💾 Save</button>
             <button id="btn-load" className="btn-tool load" onClick={loadScene}>📂 Load</button>
           </div>

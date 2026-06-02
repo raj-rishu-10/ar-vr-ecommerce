@@ -7,7 +7,17 @@ import * as THREE from 'three';
 export default function XRPlacedProduct({ item }) {
   const { scene } = useGLTF(item.product.glbModel);
   // Clone the scene so we can place multiple of the same object
-  const clone = useMemo(() => scene.clone(true), [scene]);
+  const clone = useMemo(() => {
+    const cl = scene.clone(true);
+    // Enable shadows on all meshes in the model
+    cl.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+      }
+    });
+    return cl;
+  }, [scene]);
   
   const activeItemId = useARSceneStore((s) => s.activeItemId);
   const setActiveItemId = useARSceneStore((s) => s.setActiveItemId);
@@ -37,6 +47,12 @@ export default function XRPlacedProduct({ item }) {
       <Center bottom>
         <primitive object={clone} />
       </Center>
+
+      {/* Shadow Catcher Plane: invisible except for shadows cast upon it */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.005, 0]}>
+        <planeGeometry args={[3, 3]} />
+        <shadowMaterial transparent opacity={0.4} />
+      </mesh>
 
       {/* Small selection indicator ring on the floor */}
       {isSelected && (
