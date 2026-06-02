@@ -26,6 +26,7 @@ export default function XRHitTestCursor() {
 
   const [isDragging, setIsDragging] = useState(false);
   const dragFrames = useRef(0);
+  const lastPlacedTime = useRef(0);
 
   // Track touch events to support drag-to-move for the active object
   useEffect(() => {
@@ -49,6 +50,11 @@ export default function XRHitTestCursor() {
     
     // If the user was dragging the screen (to move an object), do NOT place a new one!
     if (dragFrames.current > 5) return;
+
+    // Debounce to prevent double-placement (DOM ar-tap + WebXR select firing together)
+    const now = performance.now();
+    if (now - lastPlacedTime.current < 400) return;
+    lastPlacedTime.current = now;
 
     // If WebXR found a surface, place it exactly on the cyan ring
     if (ringRef.current && ringRef.current.visible) {

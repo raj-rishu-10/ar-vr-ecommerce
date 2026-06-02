@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, Center } from '@react-three/drei';
 import { useARSceneStore } from '../../store/useARSceneStore';
 import * as THREE from 'three';
 
@@ -19,14 +19,16 @@ export default function XRPlacedProduct({ item }) {
 
   return (
     <group position={item.position} rotation={item.rotation} scale={item.scale} onClick={handleSelect} onPointerUp={handleSelect}>
-      {/* The actual 3D model */}
-      <primitive object={clone} />
+      {/* Center the 3D model automatically and align it to the floor (y=0) */}
+      <Center bottom>
+        <primitive object={clone} />
+      </Center>
       
-      {/* Selection Box / Highlight */}
+      {/* Selection Ring on the floor */}
       {isSelected && (
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[1.1, 1.1, 1.1]} />
-          <meshBasicMaterial color="#6c5ce7" wireframe transparent opacity={0.5} depthTest={false} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+          <ringGeometry args={[0.5, 0.55, 32]} />
+          <meshBasicMaterial color="#00cec9" transparent opacity={0.8} depthTest={false} />
         </mesh>
       )}
     </group>
