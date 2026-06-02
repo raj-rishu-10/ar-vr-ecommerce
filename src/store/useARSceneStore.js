@@ -28,8 +28,8 @@ export const useARSceneStore = create((set, get) => ({
     return { 
       placedItems: newPlacedItems,
       history: [...state.history, state.placedItems], // push old state to history
-      activeItemId: null, // Do not auto-select, allowing them to place another immediately
-      interactionMode: 'place' // Stay in place mode to allow continuous tapping for multiple objects
+      activeItemId: newItem.id, // Auto-select the newly placed item
+      interactionMode: 'move' // After placing, switch to move mode so next tap moves it
     };
   }),
 
