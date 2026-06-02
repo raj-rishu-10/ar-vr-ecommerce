@@ -7,8 +7,8 @@ export default function Footer() {
       <div className="container">
         <div className="row g-4">
           <div className="col-lg-4 col-md-6">
-            <h3 className="aura-brand mb-3" style={{ fontSize: '1.4rem' }}>AURA</h3>
-            <p className="text-muted" style={{ fontSize: '0.9rem' }}>
+            <h3 className="extracted-ui-44 aura-brand mb-3" >AURA</h3>
+            <p className="extracted-ui-45 text-muted" >
               Experience the future of furniture shopping with augmented reality.
             </p>
           </div>
@@ -39,8 +39,8 @@ export default function Footer() {
             <span className="footer-link">Cookies</span>
           </div>
         </div>
-        <hr style={{ borderColor: 'var(--border-subtle)', margin: '2rem 0 1rem' }} />
-        <p className="text-center mb-0" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        <hr   className="extracted-ui-46"/>
+        <p className="extracted-ui-15 text-center mb-0" >
           © 2026 AURA. All rights reserved. Built with React & Three.js
         </p>
       </div>

@@ -31,17 +31,17 @@ export default function ShareModal({ onClose }) {
   };
 
   return (
-    <div className="modal d-block" style={{ background: 'rgba(0,0,0,0.7)', zIndex: 1070 }} onClick={onClose}>
+    <div className="extracted-ui-49 modal d-block"  onClick={onClose}>
       <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
         <motion.div
-          className="modal-content"
-          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', color: 'var(--text-primary)' }}
+          className="extracted-ui-16 modal-content"
+          
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="modal-header" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-            <h6 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, margin: 0 }}>📤 Share Your Design</h6>
-            <button className="btn-close" style={{ filter: 'invert(1)' }} onClick={onClose}></button>
+          <div className="extracted-ui-50 modal-header" >
+            <h6  className="extracted-ui-51">📤 Share Your Design</h6>
+            <button className="extracted-ui-52 btn-close"  onClick={onClose}></button>
           </div>
           <div className="modal-body">
             <div className="share-grid">

@@ -19,7 +19,7 @@ export default function Navbar() {
     <nav className="navbar navbar-expand-lg aura-navbar">
       <div className="container">
         <Link className="navbar-brand aura-brand" to="/">AURA</Link>
-        <button className="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#auraNav" style={{ filter: 'invert(1)' }}>
+        <button className="extracted-ui-47 navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#auraNav" >
           <span className="navbar-toggler-icon"></span>
         </button>
         <div className="collapse navbar-collapse" id="auraNav">

@@ -108,7 +108,7 @@ export default function ARViewer() {
           >
             🛒 {cartCount}
           </motion.button>
-        ) : <div style={{ width: 44 }} />}
+        ) : <div   className="extracted-ui-54"/>}
       </div>
 
       {/* ── Product Info Panel (Toggleable) ────────────────── */}
@@ -165,7 +165,7 @@ export default function ARViewer() {
         interaction-prompt="none"
         className="ar-model-viewer"
       >
-        <button slot="ar-button" style={{ display: 'none' }} />
+        <button slot="ar-button"   className="extracted-ui-55"/>
       </model-viewer>
 
       {/* ── Overlays ────────────────────────────────────────── */}

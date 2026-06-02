@@ -30,9 +30,9 @@ export default function Checkout() {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="container py-5 text-center">
         <div className="empty-state">
-          <p style={{ fontSize: '3rem' }}>🛒</p>
+          <p  className="extracted-ui-56">🛒</p>
           <h3>Your cart is empty</h3>
-          <p style={{ color: 'var(--text-muted)' }}>Add some products before checking out.</p>
+          <p  className="extracted-ui-19">Add some products before checking out.</p>
           <button className="btn btn-aura mt-3" onClick={() => navigate('/products')}>Browse Products</button>
         </div>
       </motion.div>
@@ -49,7 +49,7 @@ export default function Checkout() {
             <div className="col-lg-7">
               {/* Shipping */}
               <div className="checkout-card mb-4">
-                <h5 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, marginBottom: '1.5rem' }}>📦 Shipping Information</h5>
+                <h5  className="extracted-ui-57">📦 Shipping Information</h5>
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label className="form-label-aura">First Name</label>
@@ -84,7 +84,7 @@ export default function Checkout() {
 
               {/* Payment */}
               <div className="checkout-card">
-                <h5 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, marginBottom: '1.5rem' }}>💳 Payment Details</h5>
+                <h5  className="extracted-ui-58">💳 Payment Details</h5>
                 <div className="row g-3">
                   <div className="col-12">
                     <label className="form-label-aura">Card Number</label>
@@ -104,46 +104,46 @@ export default function Checkout() {
 
             {/* Right - Summary */}
             <div className="col-lg-5">
-              <div className="checkout-card" style={{ position: 'sticky', top: '100px' }}>
-                <h5 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, marginBottom: '1.5rem' }}>🧾 Order Summary</h5>
+              <div className="extracted-ui-59 checkout-card" >
+                <h5  className="extracted-ui-60">🧾 Order Summary</h5>
                 {items.map((item) => (
                   <div key={item.id} className="d-flex justify-content-between align-items-center mb-3">
                     <div className="d-flex align-items-center gap-2">
-                      <img src={item.image} alt={item.name} style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />
+                      <img src={item.image} alt={item.name}   className="extracted-ui-61"/>
                       <div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 500 }}>{item.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Qty: {item.quantity}</div>
+                        <div  className="extracted-ui-62">{item.name}</div>
+                        <div  className="extracted-ui-20">Qty: {item.quantity}</div>
                       </div>
                     </div>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span  className="extracted-ui-63">${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
 
-                <hr style={{ borderColor: 'var(--border-subtle)' }} />
+                <hr   className="extracted-ui-64"/>
 
                 {/* Promo */}
                 <div className="d-flex gap-2 mb-3">
-                  <input className="form-control form-aura" placeholder="Promo code (try AURA10)" value={promo} onChange={(e) => setPromo(e.target.value)} style={{ fontSize: '0.85rem' }} />
-                  <button type="button" className="btn btn-aura-outline" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', whiteSpace: 'nowrap' }} onClick={applyPromo}>Apply</button>
+                  <input className="form-control form-aura fs-85" placeholder="Promo code (try AURA10)" value={promo} onChange={(e) => setPromo(e.target.value)} />
+                  <button type="button" className="extracted-ui-65 btn btn-aura-outline"  onClick={applyPromo}>Apply</button>
                 </div>
-                {promoApplied && <p style={{ color: 'var(--success)', fontSize: '0.8rem' }}>✓ 10% discount applied!</p>}
+                {promoApplied && <p  className="extracted-ui-21">✓ 10% discount applied!</p>}
 
-                <div className="d-flex justify-content-between mb-2" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <div className="extracted-ui-22 d-flex justify-content-between mb-2" >
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 {discount > 0 && (
-                  <div className="d-flex justify-content-between mb-2" style={{ fontSize: '0.9rem', color: 'var(--success)' }}>
+                  <div className="extracted-ui-23 d-flex justify-content-between mb-2" >
                     <span>Discount</span>
                     <span>-${discount.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="d-flex justify-content-between mb-3" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <div className="extracted-ui-24 d-flex justify-content-between mb-3" >
                   <span>Shipping</span>
                   <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
                 </div>
-                <hr style={{ borderColor: 'var(--border-subtle)' }} />
-                <div className="d-flex justify-content-between mb-4" style={{ fontSize: '1.2rem', fontWeight: 700 }}>
+                <hr   className="extracted-ui-66"/>
+                <div className="extracted-ui-67 d-flex justify-content-between mb-4" >
                   <span>Total</span>
                   <span className="text-gradient">${total.toFixed(2)}</span>
                 </div>
@@ -151,7 +151,7 @@ export default function Checkout() {
                 <button type="submit" className="btn btn-aura w-100" id="place-order-btn">
                   Place Order — ${total.toFixed(2)}
                 </button>
-                <p className="text-center mt-2 mb-0" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                <p className="extracted-ui-25 text-center mt-2 mb-0" >
                   🔒 Secure checkout — no real payment processed
                 </p>
               </div>

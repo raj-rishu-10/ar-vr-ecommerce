@@ -41,7 +41,7 @@ export default function ProductCard({ product, index = 0 }) {
           <button className="btn btn-ar flex-grow-1" onClick={() => addItem(product)} id={`add-cart-${product.id}`}>
             🛒 Add to Cart
           </button>
-          <Link to={`/product/${product.id}`} className="btn btn-aura-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
+          <Link to={`/product/${product.id}`} className="extracted-ui-48 btn btn-aura-outline" >
             📱 View in AR
           </Link>
         </div>

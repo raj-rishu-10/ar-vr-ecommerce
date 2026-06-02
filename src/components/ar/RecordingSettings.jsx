@@ -14,59 +14,32 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
   return (
     <AnimatePresence>
       <motion.div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 1060,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-        }}
+        
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-      >
+       className="extracted-ui-24">
         <motion.div
-          style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)',
-            width: '100%',
-            maxWidth: 420,
-            overflow: 'hidden',
-          }}
+          
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) = className="extracted-ui-25"> e.stopPropagation()}
         >
           {/* Header */}
-          <div style={{
-            padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid var(--border-subtle)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <h6 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, margin: 0 }}>
+          <div  className="extracted-ui-26">
+            <h6  className="extracted-ui-27">
               ⚙️ Recording & Photo Settings
             </h6>
             <button
               onClick={onClose}
-              style={{
-                width: 30, height: 30, borderRadius: '50%',
-                border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-card)',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer', fontSize: '0.85rem',
-              }}
-            >✕</button>
+              
+             className="extracted-ui-9">✕</button>
           </div>
 
           {/* Body */}
-          <div style={{ padding: '1.5rem' }}>
+          <div  className="extracted-ui-28">
             {/* Microphone */}
             <SettingRow
               icon="🎙"
@@ -87,22 +60,12 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
 
             {/* Resolution */}
             <SettingRow icon="📐" label="Video Resolution" sub="Recording output resolution">
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div  className="extracted-ui-29">
                 {['720p', '1080p', '4K'].map((r) => (
                   <button
                     key={r}
                     onClick={() => update('resolution', r)}
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: 8,
-                      border: `1px solid ${local.resolution === r ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                      background: local.resolution === r ? 'var(--accent)' : 'var(--bg-card)',
-                      color: local.resolution === r ? 'white' : 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
+                    className={`setting-btn ${local.resolution === r ? 'active' : ''}`}
                   >
                     {r}
                   </button>
@@ -112,22 +75,12 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
 
             {/* Photo Format */}
             <SettingRow icon="📷" label="Photo Format" sub="Image capture format">
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div  className="extracted-ui-30">
                 {['PNG', 'JPEG', 'WebP'].map((f) => (
                   <button
                     key={f}
                     onClick={() => update('photoFormat', f)}
-                    style={{
-                      padding: '4px 12px',
-                      borderRadius: 8,
-                      border: `1px solid ${local.photoFormat === f ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                      background: local.photoFormat === f ? 'var(--accent)' : 'var(--bg-card)',
-                      color: local.photoFormat === f ? 'white' : 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      transition: 'all 0.2s',
-                    }}
+                    className={`setting-btn ${local.photoFormat === f ? 'active' : ''}`}
                   >
                     {f}
                   </button>
@@ -144,9 +97,9 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
-                style={{ marginTop: '-0.5rem', marginBottom: '1rem', paddingLeft: '2rem' }}
-              >
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                
+               className="extracted-ui-31">
+                <label  className="extracted-ui-10">
                   Delete after (days)
                 </label>
                 <input
@@ -156,11 +109,11 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
                   step={7}
                   value={local.autoDeleteDays}
                   onChange={(e) => update('autoDeleteDays', Number(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--accent)' }}
+                  className="extracted-ui-25 range-accent"
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                <div  className="extracted-ui-11">
                   <span>7 days</span>
-                  <span style={{ color: 'var(--accent-light)', fontWeight: 600 }}>{local.autoDeleteDays} days</span>
+                  <span  className="extracted-ui-12">{local.autoDeleteDays} days</span>
                   <span>90 days</span>
                 </div>
               </motion.div>
@@ -168,15 +121,11 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
           </div>
 
           {/* Footer */}
-          <div style={{
-            padding: '1rem 1.5rem',
-            borderTop: '1px solid var(--border-subtle)',
-            display: 'flex', gap: '0.75rem',
-          }}>
-            <button className="btn btn-aura-outline" style={{ flex: 1 }} onClick={onClose}>
+          <div  className="extracted-ui-32">
+            <button className="extracted-ui-33 btn btn-aura-outline"  onClick={onClose}>
               Cancel
             </button>
-            <button className="btn btn-aura" style={{ flex: 1 }} onClick={handleApply} id="rec-settings-apply-btn">
+            <button className="extracted-ui-34 btn btn-aura"  onClick={handleApply} id="rec-settings-apply-btn">
               Apply Settings
             </button>
           </div>
@@ -188,19 +137,12 @@ export default function RecordingSettings({ settings, onChange, onClose }) {
 
 function SettingRow({ icon, label, sub, children }) {
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0.85rem 0',
-      borderBottom: '1px solid var(--border-subtle)',
-      gap: '1rem',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
-        <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+    <div  className="extracted-ui-35">
+      <div  className="extracted-ui-36">
+        <span  className="extracted-ui-37">{icon}</span>
         <div>
-          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{label}</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{sub}</div>
+          <div  className="extracted-ui-38">{label}</div>
+          <div  className="extracted-ui-13">{sub}</div>
         </div>
       </div>
       {children}
@@ -213,32 +155,13 @@ function Toggle({ value, onChange, id }) {
     <button
       id={id}
       onClick={() => onChange(!value)}
-      style={{
-        width: 48,
-        height: 26,
-        borderRadius: 13,
-        border: 'none',
-        background: value ? 'var(--accent)' : 'var(--bg-card)',
-        cursor: 'pointer',
-        position: 'relative',
-        transition: 'background 0.2s',
-        flexShrink: 0,
-        boxShadow: value ? 'var(--shadow-glow)' : 'none',
-      }}
+      className={`toggle-btn ${value ? 'active' : ''}`}
     >
       <motion.div
         animate={{ x: value ? 22 : 2 }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-        style={{
-          position: 'absolute',
-          top: 3,
-          width: 20,
-          height: 20,
-          borderRadius: '50%',
-          background: 'white',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-        }}
-      />
+        
+       className="extracted-ui-39"/>
     </button>
   );
 }

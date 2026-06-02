@@ -8,7 +8,7 @@ export default function Products() {
   const filtered = getFilteredProducts();
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ minHeight: '100vh' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}  className="extracted-ui-101">
       <div className="container py-5">
         <div className="section-header">
           <h1 className="section-title">Our <span className="text-gradient">Collection</span></h1>
@@ -20,7 +20,7 @@ export default function Products() {
           <div className="row align-items-center g-3">
             <div className="col-md-6">
               <div className="position-relative">
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem' }}>🔍</span>
+                <span  className="extracted-ui-102">🔍</span>
                 <input
                   type="text"
                   className="form-control search-input"
@@ -47,7 +47,7 @@ export default function Products() {
           </div>
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+        <p  className="extracted-ui-46">
           Showing {filtered.length} product{filtered.length !== 1 ? 's' : ''}
         </p>
 
