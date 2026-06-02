@@ -1,5 +1,5 @@
-import React, { Suspense, useRef, useCallback } from 'react';
-import { XR, createXRStore, IfInSessionMode, useXRSessionModeSupported, XROrigin } from '@react-three/xr';
+import React, { Suspense, useRef, useCallback, Component } from 'react';
+import { XR, createXRStore, IfInSessionMode, XROrigin } from '@react-three/xr';
 import { Canvas } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import XRHitTestCursor from './XRHitTestCursor';
@@ -16,13 +16,69 @@ const store = createXRStore({
     requiredFeatures: ['hit-test'],
     optionalFeatures: ['dom-overlay', 'light-estimation'],
   },
-  // Disable hand/controller rendering — AR mobile only
   hand: false,
   controller: false,
 });
 
 // ─────────────────────────────────────────────────────────────
-// Inner component — has access to XR context (inside <XR>)
+// Error Boundary — prevents blank screen when Canvas/XR crashes
+// ─────────────────────────────────────────────────────────────
+class CanvasErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[WebXREditor] Canvas/XR error caught by boundary:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 100%)',
+          zIndex: 5,
+        }}>
+          <div style={{
+            background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.4)',
+            borderRadius: 20, padding: '28px 36px', textAlign: 'center',
+            backdropFilter: 'blur(16px)', maxWidth: 400,
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚠️</div>
+            <h3 style={{ color: '#ff7675', margin: '0 0 8px' }}>3D Engine Error</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 16px', fontSize: '0.9rem' }}>
+              The 3D scene failed to initialize. This may be a WebGL compatibility issue.
+            </p>
+            <code style={{ color: '#fab1a0', fontSize: '0.75rem', wordBreak: 'break-all', display: 'block', marginBottom: 16 }}>
+              {this.state.error?.message || 'Unknown error'}
+            </code>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              style={{
+                padding: '10px 24px', borderRadius: 30, border: 'none',
+                background: 'linear-gradient(135deg, #e17055, #d63031)',
+                color: 'white', cursor: 'pointer', fontWeight: 600,
+              }}
+            >
+              🔄 Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Inner 3D scene — lives inside <XR> context
 // ─────────────────────────────────────────────────────────────
 function ARScene() {
   const placedItems = useARSceneStore((s) => s.placedItems);
@@ -31,11 +87,8 @@ function ARScene() {
     <>
       <ambientLight intensity={1.5} />
       <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
-
-      {/* XROrigin anchors the scene to the user's floor position */}
       <XROrigin />
 
-      {/* Only render 3D AR content when inside an AR session */}
       <IfInSessionMode allow="immersive-ar">
         <Suspense fallback={null}>
           <XRHitTestCursor />
@@ -47,7 +100,6 @@ function ARScene() {
         ))}
       </IfInSessionMode>
 
-      {/* Preview scene when NOT in AR */}
       <IfInSessionMode deny="immersive-ar">
         <Environment preset="city" />
       </IfInSessionMode>
@@ -56,49 +108,85 @@ function ARScene() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Support-check button — uses the v6 hook, lives inside <XR>
+// DOM-based Enter AR button (outside Canvas, no XR context needed)
 // ─────────────────────────────────────────────────────────────
-function EnterARButton({ onClick }) {
-  // useXRSessionModeSupported returns: true | false | undefined (checking)
-  const isSupported = useXRSessionModeSupported('immersive-ar');
+function EnterARButtonDOM({ onEnter }) {
+  const [supported, setSupported] = React.useState(undefined);
+  const [errorMsg, setErrorMsg] = React.useState('');
+  const [inSession, setInSession] = React.useState(false);
 
-  if (isSupported === false) {
+  React.useEffect(() => {
+    if (!('xr' in navigator)) {
+      setSupported(false);
+      setErrorMsg('navigator.xr is undefined — use HTTPS + Chrome on Android');
+      return;
+    }
+    navigator.xr.isSessionSupported('immersive-ar')
+      .then((ok) => {
+        setSupported(ok);
+        if (!ok) setErrorMsg('Device reported: immersive-ar not supported');
+      })
+      .catch((err) => {
+        setSupported(false);
+        setErrorMsg(err.message || 'Unknown error checking AR support');
+      });
+  }, []);
+
+  React.useEffect(() => {
+    const unsub = store.subscribe((state) => {
+      setInSession(state.session != null);
+    });
+    return unsub;
+  }, []);
+
+  if (inSession) return null;
+
+  if (supported === false) {
     return (
-      <button
-        disabled
-        style={{
-          padding: '14px 28px', fontSize: '1rem', fontWeight: 'bold',
-          background: 'rgba(100,100,100,0.6)', color: '#aaa',
-          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '30px',
-          cursor: 'not-allowed',
-        }}
-      >
-        AR Not Supported on This Device
-      </button>
+      <div style={{
+        background: 'rgba(10,10,20,0.92)', borderRadius: 20, padding: '24px 32px',
+        textAlign: 'center', border: '1px solid rgba(255,100,100,0.35)',
+        backdropFilter: 'blur(12px)', maxWidth: '88vw',
+      }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>📱</div>
+        <p style={{ color: '#ff7675', margin: '0 0 6px', fontWeight: 700, fontSize: '1rem' }}>
+          AR Not Available
+        </p>
+        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', margin: '0 0 10px' }}>
+          Open this page in <strong style={{ color: '#00cec9' }}>Chrome on Android</strong> over HTTPS.
+        </p>
+        <p style={{ color: '#f3a683', fontSize: '0.72rem', margin: 0, fontFamily: 'monospace', wordBreak: 'break-all' }}>
+          Debug: {errorMsg}
+        </p>
+      </div>
     );
   }
 
   return (
     <button
-      onClick={onClick}
+      id="btn-enter-ar"
+      onClick={onEnter}
+      disabled={supported === undefined}
       style={{
-        padding: '16px 36px', fontSize: '1.1rem', fontWeight: 'bold',
-        background: isSupported
+        padding: '18px 44px', fontSize: '1.1rem', fontWeight: 700,
+        background: supported
           ? 'linear-gradient(135deg, #00b894, #00cec9)'
-          : 'rgba(60,60,60,0.7)',
-        color: 'white',
-        border: 'none', borderRadius: '30px', cursor: isSupported ? 'pointer' : 'wait',
-        boxShadow: isSupported ? '0 10px 30px rgba(0,184,148,0.4)' : 'none',
+          : 'rgba(60,60,80,0.7)',
+        color: 'white', border: 'none', borderRadius: 40,
+        cursor: supported ? 'pointer' : 'wait',
+        boxShadow: supported ? '0 12px 40px rgba(0,184,148,0.5)' : 'none',
         transition: 'all 0.3s ease',
+        letterSpacing: '0.5px',
+        opacity: supported === undefined ? 0.7 : 1,
       }}
     >
-      {isSupported === undefined ? '⏳ Checking AR support…' : '📷 Start AR Room Builder'}
+      {supported === undefined ? '⏳ Checking AR…' : '📷 Launch AR Room Builder'}
     </button>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Main page — UI overlay is pure DOM (outside Canvas)
+// Main component
 // ─────────────────────────────────────────────────────────────
 export default function WebXREditor() {
   const navigate = useNavigate();
@@ -114,6 +202,8 @@ export default function WebXREditor() {
   const isStabilized = useARSceneStore((s) => s.isStabilized);
 
   const [inSession, setInSession] = React.useState(false);
+  const [canvasReady, setCanvasReady] = React.useState(false);
+
   React.useEffect(() => {
     return store.subscribe((state) => {
       setInSession(state.session != null);
@@ -131,7 +221,10 @@ export default function WebXREditor() {
     try {
       const overlay = document.getElementById('ar-ui-overlay');
       if (overlay) {
-        store.sessionInit.domOverlay = { root: overlay };
+        store.sessionInit = {
+          ...store.sessionInit,
+          domOverlay: { root: overlay },
+        };
       }
       await store.enterAR();
     } catch (err) {
@@ -141,20 +234,61 @@ export default function WebXREditor() {
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100dvh', background: '#0a0a0f', position: 'relative', overflow: 'hidden' }}>
+    <div style={{
+      width: '100vw', height: '100dvh',
+      background: 'linear-gradient(160deg, #0a0a1a 0%, #0d0d2b 50%, #0a1020 100%)',
+      position: 'relative', overflow: 'hidden',
+    }}>
 
-      {/* ── R3F Canvas ───────────────────────────────────── */}
-      <Canvas
-        style={{ position: 'absolute', inset: 0 }}
-        gl={{ antialias: true, alpha: true }}
-        camera={{ position: [0, 1.6, 3], fov: 70 }}
-      >
-        <XR store={store}>
-          <ARScene />
-        </XR>
-      </Canvas>
+      {/* ── Background decorative gradient orbs ───────── */}
+      <div style={{
+        position: 'absolute', top: '-20%', left: '-10%',
+        width: '60vw', height: '60vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(108,92,231,0.12) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0,
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-15%', right: '-10%',
+        width: '50vw', height: '50vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,206,201,0.1) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0,
+      }} />
 
-      {/* ── DOM UI Overlay (outside Canvas — reliable on Android) ── */}
+      {/* ── R3F Canvas (wrapped in error boundary) ────── */}
+      <CanvasErrorBoundary>
+        <Canvas
+          style={{ position: 'absolute', inset: 0, zIndex: 1 }}
+          gl={{ antialias: true, alpha: true }}
+          camera={{ position: [0, 1.6, 3], fov: 70 }}
+          onCreated={() => setCanvasReady(true)}
+        >
+          <XR store={store}>
+            <ARScene />
+          </XR>
+        </Canvas>
+      </CanvasErrorBoundary>
+
+      {/* ── Canvas loading shimmer ─────────────────────── */}
+      {!canvasReady && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 2,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(160deg, #0a0a1a 0%, #0d0d2b 100%)',
+        }}>
+          <div style={{ textAlign: 'center', color: 'white' }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              border: '3px solid rgba(0,206,201,0.2)',
+              borderTopColor: '#00cec9',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px',
+            }} />
+            <p style={{ opacity: 0.6, fontSize: '0.9rem', margin: 0 }}>Initializing 3D engine…</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── DOM UI Overlay ─────────────────────────────── */}
       <div
         id="ar-ui-overlay"
         style={{
@@ -164,9 +298,9 @@ export default function WebXREditor() {
           zIndex: 10,
         }}
       >
-        {/* INVISIBLE HITBOX FOR PLACEMENT ON ANDROID */}
+        {/* INVISIBLE TAP HITBOX during AR session */}
         {inSession && (
-          <div 
+          <div
             style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', zIndex: -1 }}
             onClick={() => window.dispatchEvent(new Event('ar-tap'))}
           />
@@ -179,188 +313,141 @@ export default function WebXREditor() {
             onClick={() => navigate(-1)}
             style={{
               width: 44, height: 44, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.55)', color: 'white',
+              background: 'rgba(255,255,255,0.08)', color: 'white',
               border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)',
-              fontSize: '1.1rem', cursor: 'pointer', flexShrink: 0,
+              fontSize: '1.2rem', cursor: 'pointer', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >←</button>
 
+          {/* Page title (shown when not in session) */}
+          {!inSession && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+              top: 'max(env(safe-area-inset-top, 16px), 16px)',
+            }}>
+              <span style={{
+                color: 'white', fontWeight: 700, fontSize: '1.05rem',
+                letterSpacing: '0.5px', textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+              }}>🛋️ Room Builder</span>
+              <span style={{ color: 'rgba(0,206,201,0.85)', fontSize: '0.72rem', marginTop: 2 }}>
+                AR Furniture Placement
+              </span>
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button id="btn-undo" onClick={undo}
-              style={toolBtnStyle('#333')}>↩ Undo</button>
-            <button id="btn-save" onClick={saveScene}
-              style={toolBtnStyle('rgba(108,92,231,0.85)')}>💾 Save</button>
-            <button id="btn-load" onClick={loadScene}
-              style={toolBtnStyle('rgba(0,184,148,0.85)')}>📂 Load</button>
+            <button id="btn-undo" onClick={undo} style={toolBtnStyle('rgba(255,255,255,0.08)')}>↩ Undo</button>
+            <button id="btn-save" onClick={saveScene} style={toolBtnStyle('rgba(108,92,231,0.75)')}>💾 Save</button>
+            <button id="btn-load" onClick={loadScene} style={toolBtnStyle('rgba(0,184,148,0.75)')}>📂 Load</button>
           </div>
         </div>
 
-        {/* MIDDLE — Enter AR button (shown when not in session) */}
+        {/* CENTER — Enter AR button */}
         <div style={{ display: 'flex', justifyContent: 'center', pointerEvents: 'auto' }}>
-          {/* EnterARButton is a plain DOM component — useXRSessionModeSupported 
-              works outside Canvas via the store */}
-          <_EnterARButtonDOM onEnter={handleEnterAR} />
+          <EnterARButtonDOM onEnter={handleEnterAR} />
         </div>
 
-        {/* STABILIZATION PROMPT */}
+        {/* SURFACE SCAN PROMPT */}
         {inSession && !isStabilized && (
           <div style={{
             position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            background: 'rgba(0,0,0,0.7)', color: 'white', padding: '16px 32px', borderRadius: '30px',
-            backdropFilter: 'blur(10px)', textAlign: 'center', pointerEvents: 'none',
-            border: '1px solid rgba(255,255,255,0.2)'
+            background: 'rgba(0,0,0,0.72)', color: 'white', padding: '18px 36px', borderRadius: 30,
+            backdropFilter: 'blur(12px)', textAlign: 'center', pointerEvents: 'none',
+            border: '1px solid rgba(255,255,255,0.15)',
           }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '8px', animation: 'spin 2s linear infinite' }}>🔄</div>
-            <div style={{ fontWeight: 600 }}>Move phone around</div>
-            <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>Scan the floor to place items</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: 8, animation: 'spin 2s linear infinite' }}>🔄</div>
+            <div style={{ fontWeight: 600, fontSize: '1rem' }}>Move phone around</div>
+            <div style={{ fontSize: '0.82rem', opacity: 0.7, marginTop: 4 }}>Scan the floor to place items</div>
           </div>
         )}
 
-        {/* MIDDLE RIGHT — item tools */}
+        {/* ITEM TOOLS — right side when item selected */}
         {activeItemId && (
           <div style={{
             position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
             display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'auto',
           }}>
-            <button id="btn-duplicate" onClick={() => duplicateItem(activeItemId)}
-              style={iconBtnStyle('rgba(0,0,0,0.6)')}>📑</button>
-            <button id="btn-delete" onClick={() => deleteItem(activeItemId)}
-              style={iconBtnStyle('rgba(255,100,100,0.8)')}>🗑️</button>
+            <button id="btn-duplicate" onClick={() => duplicateItem(activeItemId)} style={iconBtnStyle('rgba(0,0,0,0.6)')}>📑</button>
+            <button id="btn-delete" onClick={() => deleteItem(activeItemId)} style={iconBtnStyle('rgba(255,80,80,0.75)')}>🗑️</button>
           </div>
         )}
 
         {/* BOTTOM — Product carousel */}
         <div style={{
           pointerEvents: 'auto',
-          background: 'rgba(10,10,15,0.82)', padding: '14px 16px',
-          borderRadius: '20px', backdropFilter: 'blur(16px)',
+          background: 'rgba(10,10,25,0.88)', padding: '14px 16px',
+          borderRadius: 20, backdropFilter: 'blur(18px)',
           border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 -4px 40px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h4 style={{ color: 'white', margin: 0, fontSize: '0.85rem', opacity: 0.8 }}>
-              Select Product to Place:
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <h4 style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: '0.82rem', fontWeight: 600 }}>
+              Select Furniture to Place
             </h4>
-            <span style={{ color: '#00cec9', fontSize: '0.8rem' }}>
+            <span style={{
+              color: '#00cec9', fontSize: '0.78rem',
+              background: 'rgba(0,206,201,0.12)', padding: '2px 10px', borderRadius: 20,
+            }}>
               {placedItems.length} placed
             </span>
           </div>
           <div style={{
             display: 'flex', gap: '10px', overflowX: 'auto',
-            paddingBottom: '4px', scrollbarWidth: 'none',
+            paddingBottom: 4, scrollbarWidth: 'none',
           }}>
             {AR_PRODUCTS.map((p) => (
               <button
                 key={p.id}
                 id={`product-${p.id}`}
                 onClick={() => setActiveProduct(p)}
+                title={p.name}
                 style={{
-                  flexShrink: 0, width: 64, height: 64, borderRadius: '12px',
+                  flexShrink: 0, width: 64, height: 64, borderRadius: 14,
                   padding: 0, overflow: 'hidden', cursor: 'pointer',
                   border: activeProduct?.id === p.id
                     ? '2.5px solid #00cec9'
                     : '2.5px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.05)',
-                  boxShadow: activeProduct?.id === p.id ? '0 0 12px rgba(0,206,201,0.5)' : 'none',
+                  background: 'rgba(255,255,255,0.06)',
+                  boxShadow: activeProduct?.id === p.id ? '0 0 16px rgba(0,206,201,0.55)' : 'none',
                   transition: 'all 0.2s ease',
+                  transform: activeProduct?.id === p.id ? 'scale(1.08)' : 'scale(1)',
                 }}
               >
-                <img src={p.image} alt={p.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </button>
             ))}
           </div>
         </div>
       </div>
+
+      {/* ── Keyframe for spin animation ─────────────────── */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
 
-// ── Plain DOM version of the Enter AR button ──────────────────
-// Lives outside Canvas so it doesn't need XR context
-function _EnterARButtonDOM({ onEnter }) {
-  const [supported, setSupported] = React.useState(undefined); // undefined = checking
-  const [errorMsg, setErrorMsg] = React.useState('');
-
-  React.useEffect(() => {
-    if (!('xr' in navigator)) { 
-      setSupported(false); 
-      setErrorMsg("navigator.xr is undefined (Not using Chrome, or not using HTTPS)");
-      return; 
-    }
-    navigator.xr.isSessionSupported('immersive-ar')
-      .then((isSupported) => {
-        setSupported(isSupported);
-        if (!isSupported) setErrorMsg("Device hardware reported false for immersive-ar");
-      })
-      .catch((err) => {
-        setSupported(false);
-        setErrorMsg(err.message || "Unknown error checking session support");
-      });
-  }, []);
-
-  // Hide the button once user is in a session (session running = canvas is the AR view)
-  const [inSession, setInSession] = React.useState(false);
-  React.useEffect(() => {
-    const unsub = store.subscribe((state) => {
-      setInSession(state.session != null);
-    });
-    return unsub;
-  }, []);
-
-  if (inSession) return null;
-
-  if (supported === false) {
-    return (
-      <div style={{
-        background: 'rgba(10,10,15,0.9)', borderRadius: '16px', padding: '20px 28px',
-        textAlign: 'center', border: '1px solid rgba(255,80,80,0.3)',
-        backdropFilter: 'blur(10px)', maxWidth: '90vw'
-      }}>
-        <div style={{ fontSize: '2rem', marginBottom: 8 }}>⚠️</div>
-        <p style={{ color: '#ff7675', margin: '0 0 4px', fontWeight: 600 }}>AR Not Supported</p>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', margin: 0, paddingBottom: '8px' }}>
-          Please use official Google Chrome.
-        </p>
-        <p style={{ color: '#f3a683', fontSize: '0.75rem', margin: 0, fontFamily: 'monospace', wordBreak: 'break-all' }}>
-          Debug: {errorMsg}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      id="btn-enter-ar"
-      onClick={onEnter}
-      disabled={supported === undefined}
-      style={{
-        padding: '18px 40px', fontSize: '1.1rem', fontWeight: 700,
-        background: supported
-          ? 'linear-gradient(135deg, #00b894, #00cec9)'
-          : 'rgba(60,60,60,0.7)',
-        color: 'white', border: 'none', borderRadius: '40px',
-        cursor: supported ? 'pointer' : 'wait',
-        boxShadow: supported ? '0 12px 35px rgba(0,184,148,0.45)' : 'none',
-        transition: 'all 0.3s ease',
-        letterSpacing: '0.5px',
-      }}
-    >
-      {supported === undefined ? '⏳ Checking AR…' : '📷 Start AR Room Builder'}
-    </button>
-  );
-}
-
-// ── Style helpers ─────────────────────────────────────────────
+// ── Style helpers ──────────────────────────────────────────────
 const toolBtnStyle = (bg) => ({
-  padding: '8px 16px', borderRadius: '20px',
+  padding: '8px 16px', borderRadius: 20,
   background: bg, color: 'white',
-  border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
-  cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+  border: '1px solid rgba(255,255,255,0.15)',
+  backdropFilter: 'blur(10px)',
+  cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
+  transition: 'opacity 0.2s',
 });
 
 const iconBtnStyle = (bg) => ({
   width: 50, height: 50, borderRadius: '50%',
   background: bg, color: 'white',
-  border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.2)',
+  backdropFilter: 'blur(10px)',
   fontSize: '1.2rem', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
 });
