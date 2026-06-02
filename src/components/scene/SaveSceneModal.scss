@@ -1,0 +1,35 @@
+.save-scene-modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1070;
+}
+
+.save-scene-modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+.save-scene-modal-header {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.save-scene-modal-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+}
+
+.save-scene-modal-close-btn {
+  filter: invert(1);
+}
+
+.save-scene-modal-info-text {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.save-scene-modal-footer {
+  border-top: 1px solid var(--border-subtle);
+}
