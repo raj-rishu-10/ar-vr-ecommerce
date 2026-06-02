@@ -1,9 +1,8 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useXRInputSourceEvent, useXRHitTest, useXRStore } from '@react-three/xr';
-import { useFrame, useThree } from '@react-three/fiber';
-import { useStore } from 'zustand';
-import { useARSceneStore } from '../../store/useARSceneStore';
+import { useThree } from '@react-three/fiber';
+import { useXRHitTest, useXRInputSourceEvent } from '@react-three/xr';
+import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useARSceneStore } from '../../store/useARSceneStore';
 
 const matrixHelper = new THREE.Matrix4();
 
@@ -13,6 +12,14 @@ export default function XRHitTestCursor() {
   const activeProduct = useARSceneStore((s) => s.activeProduct);
 
   const { camera } = useThree();
+
+  const cameraPosRef = useRef(new THREE.Vector3());
+  const cameraDirRef = useRef(new THREE.Vector3());
+
+  useFrame(() => {
+    camera.getWorldPosition(cameraPosRef.current);
+    camera.getWorldDirection(cameraDirRef.current);
+  });
 
   const handleTapToPlace = useCallback((event) => {
     if (!activeProduct) return;
@@ -26,19 +33,20 @@ export default function XRHitTestCursor() {
         activeProduct.modelScale || [1, 1, 1]
       );
     } else {
-      // FALLBACK: If no surface is detected (common on featureless tables or weak ARCore),
-      // force place the object 1.5 meters in front of the user's camera on an estimated floor plane.
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
+      // FALLBACK: Force place 1.5m in front of the tracked camera
+      const direction = cameraDirRef.current.clone();
       direction.y = 0; // flatten to ground plane
-      direction.normalize();
+      if (direction.lengthSq() > 0) {
+        direction.normalize();
+      } else {
+        direction.set(0, 0, -1);
+      }
 
-      const position = new THREE.Vector3();
-      camera.getWorldPosition(position);
+      const position = cameraPosRef.current.clone();
       
       // Move 1.5 meters forward, and estimate floor is ~1 meter below the camera lens
       position.add(direction.multiplyScalar(1.5));
-      position.y = -1.0; 
+      position.y -= 1.0; 
 
       placeItem(
         activeProduct,
