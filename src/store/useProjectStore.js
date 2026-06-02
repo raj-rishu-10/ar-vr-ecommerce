@@ -20,7 +20,8 @@ export const useProjectStore = create((set, get) => ({
       type,
       updatedAt: new Date().toISOString(),
       thumbnail: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', // Default placeholder
-      sceneData: [] // Will store the placedItems
+      sceneData: [], // Will store the placedItems
+      roomData: { dimensions: { width: 5, height: 3, depth: 5 }, wallMaterial: { color: '#ffffff' }, floorMaterial: { color: '#e0e0e0' } }
     };
     
     set((state) => {
@@ -41,13 +42,18 @@ export const useProjectStore = create((set, get) => ({
 
   setCurrentProject: (id) => set({ currentProjectId: id }),
 
-  saveCurrentProjectData: (sceneData) => {
+  saveCurrentProjectData: (sceneData, roomData) => {
     const { currentProjectId, projects } = get();
     if (!currentProjectId) return;
 
     set((state) => {
       const updated = state.projects.map(p => 
-        p.id === currentProjectId ? { ...p, sceneData, updatedAt: new Date().toISOString() } : p
+        p.id === currentProjectId ? { 
+          ...p, 
+          sceneData: sceneData || p.sceneData, 
+          roomData: roomData || p.roomData,
+          updatedAt: new Date().toISOString() 
+        } : p
       );
       localStorage.setItem('aura_projects', JSON.stringify(updated));
       return { projects: updated };

@@ -7,6 +7,7 @@ export default function RoomScanner({ onClose }) {
   const [status, setStatus] = useState('Idle');
   const [depthOutput, setDepthOutput] = useState(null);
   const canvasRef = useRef(null);
+  const hiddenCanvasRef = useRef(null);
   
   const { loaded: cvLoaded, cv } = useOpenCV();
   const { generateRoomLayout } = useRoomStore();
@@ -50,15 +51,51 @@ export default function RoomScanner({ onClose }) {
   };
 
   const processImage = () => {
-    if (!image || !cvLoaded) return;
-    setStatus('Sending to AI pipelines...');
+    if (!image || !cvLoaded || !cv) return;
+    setStatus('Running Computer Vision Pipeline (Canny Edge Detection)...');
     
-    // In a full implementation, we pass the image blob to the workers
-    depthWorkerRef.current.postMessage({ 
-      type: 'PREDICT', 
-      image,
-      id: Date.now() 
-    });
+    // Draw uploaded image to hidden canvas for OpenCV processing
+    const imgElement = new Image();
+    imgElement.src = image;
+    imgElement.onload = () => {
+      const canvas = hiddenCanvasRef.current;
+      if (!canvas) return;
+      canvas.width = imgElement.width;
+      canvas.height = imgElement.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgElement, 0, 0);
+
+      try {
+        // 1. Read Image
+        const src = cv.imread(canvas);
+        const dst = new cv.Mat();
+        
+        // 2. Grayscale
+        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+        
+        // 3. Edge Detection
+        cv.Canny(dst, dst, 50, 150, 3, false);
+        
+        // 4. (In full production) Use cv.HoughLinesP or cv.findContours to extract exact floor polygon
+        // For now, we simulate extraction bounds:
+        
+        src.delete();
+        dst.delete();
+        
+        setStatus('Sending edge maps to AI (Depth & Segment)...');
+        
+        // Send to depth worker
+        depthWorkerRef.current.postMessage({ 
+          type: 'PREDICT', 
+          image,
+          id: Date.now() 
+        });
+
+      } catch (err) {
+        console.error("OpenCV Processing Error:", err);
+        setStatus('CV Error. Check console.');
+      }
+    };
   };
 
   const simulateRoomGeneration = () => {
@@ -88,6 +125,9 @@ export default function RoomScanner({ onClose }) {
 
         <input type="file" accept="image/*" onChange={handleImageUpload} style={{ padding: '10px', background: '#0f172a', borderRadius: '8px' }} />
         
+        {/* Hidden canvas for OpenCV Canny Processing */}
+        <canvas ref={hiddenCanvasRef} style={{ display: 'none' }} />
+
         {image && (
           <img src={image} alt="Room" style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px' }} />
         )}

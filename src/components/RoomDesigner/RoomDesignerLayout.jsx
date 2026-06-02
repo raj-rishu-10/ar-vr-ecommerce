@@ -1,16 +1,56 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useProjectStore } from '../../store/useProjectStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { useFurnitureStore } from '../../stores/useFurnitureStore';
 import RoomCanvas from './RoomCanvas';
 import RoomScanner from '../RoomScanner/RoomScanner';
 import products from '../../data/products.json';
+import { ARButton } from '@react-three/xr';
 
 export default function RoomDesignerLayout() {
   const { setDimensions, wallMaterial, setWallMaterial } = useRoomStore();
   const { activeView, setView } = useCameraStore();
-  const { interactionMode, setInteractionMode, clearRoom, addFurniture } = useFurnitureStore();
+  const { interactionMode, setInteractionMode, clearRoom, addFurniture, placedItems } = useFurnitureStore();
   const [showScanner, setShowScanner] = React.useState(false);
+  const { projects, currentProjectId, saveCurrentProjectData } = useProjectStore();
+
+  const isInitialMount = useRef(true);
+
+  // Initialize room data on mount
+  useEffect(() => {
+    if (!currentProjectId) return;
+    const project = projects.find(p => p.id === currentProjectId);
+    if (project) {
+      if (project.roomData) {
+        useRoomStore.setState({ 
+          dimensions: project.roomData.dimensions,
+          wallMaterial: project.roomData.wallMaterial,
+          floorMaterial: project.roomData.floorMaterial
+        });
+      }
+      if (project.sceneData) {
+        useFurnitureStore.setState({ placedItems: project.sceneData });
+      }
+    }
+  }, [currentProjectId]);
+
+  // Auto-save when room or furniture changes
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    if (currentProjectId) {
+      const roomData = {
+        dimensions: useRoomStore.getState().dimensions,
+        wallMaterial: useRoomStore.getState().wallMaterial,
+        floorMaterial: useRoomStore.getState().floorMaterial
+      };
+      saveCurrentProjectData(placedItems, roomData);
+    }
+  }, [placedItems, useRoomStore.getState().dimensions, useRoomStore.getState().wallMaterial, useRoomStore.getState().floorMaterial]);
 
   const AR_PRODUCTS = products.filter((p) => p.glbModel);
 
@@ -30,12 +70,12 @@ export default function RoomDesignerLayout() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label>Width (m)</label>
-          <input type="number" defaultValue={5} onChange={(e) => setDimensions(parseFloat(e.target.value) || 5, useRoomStore.getState().dimensions.height, useRoomStore.getState().dimensions.depth)} />
+          <input type="number" value={useRoomStore.getState().dimensions.width} onChange={(e) => setDimensions(parseFloat(e.target.value) || 5, useRoomStore.getState().dimensions.height, useRoomStore.getState().dimensions.depth)} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label>Depth (m)</label>
-          <input type="number" defaultValue={5} onChange={(e) => setDimensions(useRoomStore.getState().dimensions.width, useRoomStore.getState().dimensions.height, parseFloat(e.target.value) || 5)} />
+          <input type="number" value={useRoomStore.getState().dimensions.depth} onChange={(e) => setDimensions(useRoomStore.getState().dimensions.width, useRoomStore.getState().dimensions.height, parseFloat(e.target.value) || 5)} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -119,6 +159,12 @@ export default function RoomDesignerLayout() {
             Clear Room
           </button>
         </div>
+
+        {/* WebXR AR Button Overlay */}
+        <ARButton 
+          style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10, padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}
+          sessionInit={{ requiredFeatures: ['hit-test'] }}
+        />
 
         <RoomCanvas />
       </main>
