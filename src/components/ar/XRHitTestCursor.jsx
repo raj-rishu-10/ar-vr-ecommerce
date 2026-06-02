@@ -1,4 +1,4 @@
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useXRHitTest, useXRInputSourceEvent } from '@react-three/xr';
 import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
