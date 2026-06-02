@@ -8,7 +8,7 @@ export default function FurnitureItem({ item }) {
   const { scene } = useGLTF(item.glbModel);
   const { activeItemId, interactionMode, setActiveItem, updateFurnitureTransform } = useFurnitureStore();
   const { dimensions } = useRoomStore();
-  const groupRef = useRef();
+  const [target, setTarget] = React.useState(null);
 
   const isActive = activeItemId === item.instanceId;
 
@@ -21,39 +21,39 @@ export default function FurnitureItem({ item }) {
 
   return (
     <group>
-      {isActive && interactionMode !== 'select' && (
+      {isActive && interactionMode !== 'select' && target && (
         <TransformControls 
-          object={groupRef}
+          object={target}
           mode={interactionMode}
           translationSnap={0.1} // Snap to 10cm grid
           rotationSnap={Math.PI / 4} // Snap to 45 degrees
           onMouseUp={() => {
-            if (groupRef.current) {
-              const pos = groupRef.current.position;
+            if (target) {
+              const pos = target.position;
               
               // Prevent clipping through walls (bounding box approach)
               const halfW = dimensions.width / 2;
               const halfD = dimensions.depth / 2;
-              const paddingX = (size.x * groupRef.current.scale.x) / 2;
-              const paddingZ = (size.z * groupRef.current.scale.z) / 2;
+              const paddingX = (size.x * target.scale.x) / 2;
+              const paddingZ = (size.z * target.scale.z) / 2;
 
               pos.x = THREE.MathUtils.clamp(pos.x, -halfW + paddingX, halfW - paddingX);
               pos.z = THREE.MathUtils.clamp(pos.z, -halfD + paddingZ, halfD - paddingZ);
               pos.y = Math.max(0, pos.y); // Snap to floor or above
               
               // Apply clamping back to the ref immediately
-              groupRef.current.position.copy(pos);
+              target.position.copy(pos);
 
               updateFurnitureTransform(item.instanceId, 'position', pos.toArray());
-              updateFurnitureTransform(item.instanceId, 'rotation', groupRef.current.rotation.toArray());
-              updateFurnitureTransform(item.instanceId, 'scale', groupRef.current.scale.toArray());
+              updateFurnitureTransform(item.instanceId, 'rotation', target.rotation.toArray());
+              updateFurnitureTransform(item.instanceId, 'scale', target.scale.toArray());
             }
           }}
         />
       )}
 
       <group 
-        ref={groupRef}
+        ref={setTarget}
         position={item.position} 
         rotation={item.rotation} 
         scale={item.scale}
