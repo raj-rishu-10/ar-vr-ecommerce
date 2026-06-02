@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useProjectStore } from './useProjectStore';
 
 export const useARSceneStore = create((set, get) => ({
   placedItems: [],
@@ -92,19 +93,25 @@ export const useARSceneStore = create((set, get) => ({
     interactionMode: 'place'
   })),
 
-  // Feature: Save/Load from LocalStorage
+  // Feature: Save/Load to Project Store
   saveScene: () => {
     const { placedItems } = get();
-    localStorage.setItem('aura_ar_scene', JSON.stringify(placedItems));
+    // Use the global project store to save this scene data into the active project
+    useProjectStore.getState().saveCurrentProjectData(placedItems);
+    alert('Project saved successfully!');
   },
 
   loadScene: () => set((state) => {
     try {
-      const saved = localStorage.getItem('aura_ar_scene');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      // Load from the currently active project
+      const currentId = useProjectStore.getState().currentProjectId;
+      if (!currentId) return state;
+
+      const project = useProjectStore.getState().projects.find(p => p.id === currentId);
+      
+      if (project && project.sceneData) {
         return {
-          placedItems: parsed,
+          placedItems: project.sceneData,
           history: [...state.history, state.placedItems], // push old state before loading
           activeItemId: null,
           interactionMode: 'place'

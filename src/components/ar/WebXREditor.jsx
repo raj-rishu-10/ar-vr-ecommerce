@@ -5,6 +5,7 @@ import { Environment, OrbitControls, useGLTF, ContactShadows } from '@react-thre
 import XRHitTestCursor from './XRHitTestCursor';
 import XRPlacedProduct from './XRPlacedProduct';
 import { useARSceneStore } from '../../store/useARSceneStore';
+import { useProjectStore } from '../../store/useProjectStore';
 import products from '../../data/products.json';
 import { useNavigate } from 'react-router-dom';
 import './WebXREditor.scss';
@@ -162,12 +163,18 @@ export default function WebXREditor() {
   const interactionMode  = useARSceneStore((s) => s.interactionMode);
   const setPlacementMode = useARSceneStore((s) => s.setPlacementMode);
 
+  const currentProjectId = useProjectStore((s) => s.currentProjectId);
+  const currentProject = useProjectStore((s) => s.projects.find(p => p.id === currentProjectId));
+
   const [inSession, setInSession]   = React.useState(false);
   const [canvasReady, setCanvasReady] = React.useState(false);
 
   React.useEffect(() => store.subscribe((s) => setInSession(s.session != null)), []);
+  
   React.useEffect(() => {
     if (!activeProduct && AR_PRODUCTS.length > 0) setActiveProduct(AR_PRODUCTS[0]);
+    // Auto-load the active project on mount
+    loadScene();
   }, []); // eslint-disable-line
 
   const handleEnterAR = useCallback(async () => {
@@ -231,7 +238,7 @@ export default function WebXREditor() {
 
           {!inSession && (
             <div className="title-container">
-              <div className="title-main">🛋️ Room Builder</div>
+              <div className="title-main">{currentProject ? currentProject.name : '🛋️ Room Builder'}</div>
               <div className="title-sub">AR Furniture Placement</div>
             </div>
           )}
