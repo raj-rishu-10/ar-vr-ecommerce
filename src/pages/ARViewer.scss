@@ -165,32 +165,41 @@
   pointer-events: none;
 }
 
+.hotspot-dot {
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dim-svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.dim-svg-line {
+  stroke: #0058a3; /* IKEA Blue */
+  stroke-width: 1.5;
+  stroke-dasharray: 4;
+}
+
 .hotspot-label {
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(4px);
+  background: #ffffff;
   color: #0058a3; /* IKEA Blue */
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px; /* Pill shape like screenshot */
+  font-size: 0.75rem;
+  font-weight: 600;
   white-space: nowrap;
-  border: 2px solid #0058a3;
-  box-shadow: 0 4px 12px rgba(0,88,163,0.15);
+  border: 1px solid #0058a3;
   position: relative;
-
-  /* Little connector dots to the 3D surface */
-  &::after {
-    content: '';
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    background: #0058a3;
-    border-radius: 50%;
-  }
-
-  &.width::after { bottom: -10px; left: 50%; transform: translateX(-50%); }
-  &.height::after { right: -10px; top: 50%; transform: translateY(-50%); }
-  &.depth::after { top: -10px; left: 50%; transform: translateX(-50%); }
+  z-index: 11;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .ar-model-viewer {

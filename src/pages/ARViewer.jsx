@@ -33,6 +33,11 @@ export default function ARViewer() {
     setArSupported(isAndroid || isIOS);
   }, []);
 
+  const svgRef = useRef(null);
+  const lineWRef = useRef(null);
+  const lineHRef = useRef(null);
+  const lineDRef = useRef(null);
+
   useEffect(() => {
     const mv = mvRef.current;
     if (!mv) return;
@@ -53,16 +58,53 @@ export default function ARViewer() {
       setIsARMode(e.detail.status === 'session-started' || e.detail.status === 'object-placed');
     };
 
+    const updateSvgLines = () => {
+      if (!show3DScale || !mv) return;
+      
+      const getPos = (slotName) => {
+        const el = mv.querySelector(`[slot="${slotName}"]`);
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        const mvRect = mv.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2 - mvRect.left,
+          y: rect.top + rect.height / 2 - mvRect.top
+        };
+      };
+
+      const pA = getPos('dot-A');
+      const pB = getPos('dot-B');
+      const pD = getPos('dot-D');
+      const pF = getPos('dot-F');
+
+      if (lineWRef.current && pA && pB) {
+        lineWRef.current.setAttribute('x1', pA.x); lineWRef.current.setAttribute('y1', pA.y);
+        lineWRef.current.setAttribute('x2', pB.x); lineWRef.current.setAttribute('y2', pB.y);
+      }
+      if (lineHRef.current && pA && pD) {
+        lineHRef.current.setAttribute('x1', pA.x); lineHRef.current.setAttribute('y1', pA.y);
+        lineHRef.current.setAttribute('x2', pD.x); lineHRef.current.setAttribute('y2', pD.y);
+      }
+      if (lineDRef.current && pB && pF) {
+        lineDRef.current.setAttribute('x1', pB.x); lineDRef.current.setAttribute('y1', pB.y);
+        lineDRef.current.setAttribute('x2', pF.x); lineDRef.current.setAttribute('y2', pF.y);
+      }
+    };
+
     mv.addEventListener('load', onLoad);
     mv.addEventListener('error', onError);
     mv.addEventListener('ar-status', onArStatus);
+    mv.addEventListener('camera-change', updateSvgLines);
+    window.addEventListener('resize', updateSvgLines);
 
     return () => {
       mv.removeEventListener('load', onLoad);
       mv.removeEventListener('error', onError);
       mv.removeEventListener('ar-status', onArStatus);
+      mv.removeEventListener('camera-change', updateSvgLines);
+      window.removeEventListener('resize', updateSvgLines);
     };
-  }, [activeProduct]);
+  }, [activeProduct, show3DScale]);
 
   const handleSelectProduct = useCallback((p) => {
     if (p.id === activeProduct.id) return;
@@ -167,34 +209,52 @@ export default function ARViewer() {
 
         {show3DScale && modelDims && (
           <>
-            {/* Width (X-axis) - Top edge */}
+            {/* SVG Overlay for Lines */}
+            <svg className="dim-svg-overlay" xmlns="http://www.w3.org/2000/svg" ref={svgRef}>
+              <defs>
+                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M 0 0 L 6 3 L 0 6 z" fill="#0058a3" />
+                </marker>
+                <marker id="arrowtail" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                  <path d="M 6 0 L 0 3 L 6 6 z" fill="#0058a3" />
+                </marker>
+              </defs>
+              <line ref={lineWRef} className="dim-svg-line" markerStart="url(#arrowtail)" markerEnd="url(#arrowhead)" />
+              <line ref={lineHRef} className="dim-svg-line" markerStart="url(#arrowtail)" markerEnd="url(#arrowhead)" />
+              <line ref={lineDRef} className="dim-svg-line" markerStart="url(#arrowtail)" markerEnd="url(#arrowhead)" />
+            </svg>
+
+            {/* Endpoints (Invisible, used to get screen coords) */}
+            <div slot="dot-A" className="hotspot-dot" data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}></div>
+            <div slot="dot-B" className="hotspot-dot" data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}></div>
+            <div slot="dot-D" className="hotspot-dot" data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y + modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}></div>
+            <div slot="dot-F" className="hotspot-dot" data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z - modelDims.extents.z / 2}`}></div>
+
+            {/* Width (X-axis) - Midpoint */}
             <div 
               slot="hotspot-width" 
               className="hotspot-dim" 
-              data-position={`${modelDims.center.x} ${modelDims.center.y + modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}
-              data-normal="0 1 0"
+              data-position={`${modelDims.center.x} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}
             >
-              <div className="hotspot-label width">{activeProduct.dimensions?.width} cm</div>
+              <div className="hotspot-label">{activeProduct.dimensions?.width} cm</div>
             </div>
             
-            {/* Height (Y-axis) - Left edge */}
+            {/* Height (Y-axis) - Midpoint */}
             <div 
               slot="hotspot-height" 
               className="hotspot-dim" 
               data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y} ${modelDims.center.z + modelDims.extents.z / 2}`}
-              data-normal="-1 0 0"
             >
-              <div className="hotspot-label height">{activeProduct.dimensions?.height} cm</div>
+              <div className="hotspot-label">{activeProduct.dimensions?.height} cm</div>
             </div>
 
-            {/* Depth (Z-axis) - Bottom right edge */}
+            {/* Depth (Z-axis) - Midpoint */}
             <div 
               slot="hotspot-depth" 
               className="hotspot-dim" 
               data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z}`}
-              data-normal="1 0 0"
             >
-              <div className="hotspot-label depth">{activeProduct.dimensions?.depth} cm</div>
+              <div className="hotspot-label">{activeProduct.dimensions?.depth} cm</div>
             </div>
           </>
         )}
