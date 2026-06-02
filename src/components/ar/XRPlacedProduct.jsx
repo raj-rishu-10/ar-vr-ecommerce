@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { useGLTF, Center, ContactShadows } from '@react-three/drei';
+import { useGLTF, Center } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useARSceneStore } from '../../store/useARSceneStore';
 import * as THREE from 'three';
@@ -19,13 +19,14 @@ export default function XRPlacedProduct({ item }) {
   };
 
   const groupRef = useRef();
-  const currentScale = useRef(new THREE.Vector3(0, 0, 0));
+  // Start at a small non-zero value so the object is visible immediately
+  const currentScale = useRef(new THREE.Vector3(0.01, 0.01, 0.01));
   const targetScale = useMemo(() => new THREE.Vector3(...(item.scale || [1, 1, 1])), [item.scale]);
 
-  // Pop-in animation: smoothly scale the object up when it mounts, or when scale changes
+  // Pop-in animation: smoothly scale the object up when it mounts
   useFrame((state, delta) => {
     if (groupRef.current) {
-      currentScale.current.lerp(targetScale, delta * 12);
+      currentScale.current.lerp(targetScale, Math.min(delta * 10, 1));
       groupRef.current.scale.copy(currentScale.current);
     }
   });
@@ -36,17 +37,6 @@ export default function XRPlacedProduct({ item }) {
       <Center bottom>
         <primitive object={clone} />
       </Center>
-      
-      {/* Realistic Floor Shadow */}
-      <ContactShadows 
-        position={[0, 0.01, 0]} 
-        opacity={0.65} 
-        scale={2.5} 
-        blur={1.5} 
-        far={1.5} 
-        resolution={256} 
-        color="#000000" 
-      />
 
       {/* Selection Ring on the floor */}
       {isSelected && (

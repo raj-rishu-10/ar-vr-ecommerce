@@ -1,10 +1,34 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useXRHitTest, useXRInputSourceEvent } from '@react-three/xr';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo, Suspense } from 'react';
+import { useGLTF, Center } from '@react-three/drei';
 import * as THREE from 'three';
 import { useARSceneStore } from '../../store/useARSceneStore';
 
 const matrixHelper = new THREE.Matrix4();
+
+// Holographic preview of the selected furniture shown on the cursor
+function CursorPreview({ product }) {
+  const { scene } = useGLTF(product.glbModel);
+  const clone = useMemo(() => {
+    const cl = scene.clone(true);
+    // Make the preview semi-transparent / holographic
+    cl.traverse((child) => {
+      if (child.isMesh) {
+        child.material = child.material.clone();
+        child.material.transparent = true;
+        child.material.opacity = 0.4;
+      }
+    });
+    return cl;
+  }, [scene]);
+
+  return (
+    <Center bottom>
+      <primitive object={clone} scale={product.modelScale || [1, 1, 1]} />
+    </Center>
+  );
+}
 
 export default function XRHitTestCursor() {
   const ringRef = useRef();
@@ -47,7 +71,7 @@ export default function XRHitTestCursor() {
 
   const handleTapToPlace = useCallback((event) => {
     if (!activeProduct) return;
-
+    
     // If the user was dragging the screen (to move an object), do NOT place a new one!
     if (dragFrames.current > 5) return;
 
@@ -75,10 +99,10 @@ export default function XRHitTestCursor() {
       }
 
       const position = cameraPosRef.current.clone();
-
+      
       // Move 1.5 meters forward, and estimate floor is ~1 meter below the camera lens
       position.add(direction.multiplyScalar(1.5));
-      position.y -= 1.0;
+      position.y -= 1.0; 
 
       placeItem(
         activeProduct,
@@ -110,7 +134,7 @@ export default function XRHitTestCursor() {
       if (!isStabilized) {
         setStabilized(true);
       }
-
+      
       const success = getWorldMatrix(matrixHelper, results[0]);
       if (success) {
         matrixHelper.decompose(
@@ -137,6 +161,13 @@ export default function XRHitTestCursor() {
 
   return (
     <group ref={ringRef} visible={false}>
+      {/* 3D Holographic Preview of the selected furniture on the cursor */}
+      {activeProduct && !isDragging && (
+        <Suspense fallback={null}>
+          <CursorPreview product={activeProduct} />
+        </Suspense>
+      )}
+
       {/* Outer ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.15, 0.2, 32]} />
