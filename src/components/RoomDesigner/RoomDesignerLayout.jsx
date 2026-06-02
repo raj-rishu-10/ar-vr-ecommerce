@@ -3,12 +3,14 @@ import { useRoomStore } from '../../stores/useRoomStore';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { useFurnitureStore } from '../../stores/useFurnitureStore';
 import RoomCanvas from './RoomCanvas';
+import RoomScanner from '../RoomScanner/RoomScanner';
 import products from '../../data/products.json';
 
 export default function RoomDesignerLayout() {
   const { setDimensions, wallMaterial, setWallMaterial } = useRoomStore();
   const { activeView, setView } = useCameraStore();
   const { interactionMode, setInteractionMode, clearRoom, addFurniture } = useFurnitureStore();
+  const [showScanner, setShowScanner] = React.useState(false);
 
   const AR_PRODUCTS = products.filter((p) => p.glbModel);
 
@@ -19,6 +21,13 @@ export default function RoomDesignerLayout() {
       <aside style={{ width: '300px', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', zIndex: 10 }}>
         <h2>Room Settings</h2>
         
+        <button 
+          onClick={() => setShowScanner(true)}
+          style={{ width: '100%', padding: '12px', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          ✨ AI Scan Room
+        </button>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label>Width (m)</label>
           <input type="number" defaultValue={5} onChange={(e) => setDimensions(parseFloat(e.target.value) || 5, useRoomStore.getState().dimensions.height, useRoomStore.getState().dimensions.depth)} />
@@ -114,6 +123,7 @@ export default function RoomDesignerLayout() {
         <RoomCanvas />
       </main>
 
+      {showScanner && <RoomScanner onClose={() => setShowScanner(false)} />}
     </div>
   );
 }
