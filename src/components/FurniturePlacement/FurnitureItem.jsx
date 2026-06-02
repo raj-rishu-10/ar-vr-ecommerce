@@ -21,10 +21,12 @@ export default function FurnitureItem({ item }) {
 
   return (
     <group>
-      {isActive && interactionMode !== 'select' && target && (
+      {target && (
         <TransformControls 
           object={target}
-          mode={interactionMode}
+          mode={interactionMode === 'select' ? 'translate' : interactionMode}
+          visible={isActive && interactionMode !== 'select'}
+          enabled={isActive && interactionMode !== 'select'}
           translationSnap={0.1} // Snap to 10cm grid
           rotationSnap={Math.PI / 4} // Snap to 45 degrees
           onMouseUp={() => {
