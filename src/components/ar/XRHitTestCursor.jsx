@@ -47,7 +47,7 @@ export default function XRHitTestCursor() {
 
   const handleTapToPlace = useCallback((event) => {
     if (!activeProduct) return;
-    
+
     // If the user was dragging the screen (to move an object), do NOT place a new one!
     if (dragFrames.current > 5) return;
 
@@ -75,10 +75,10 @@ export default function XRHitTestCursor() {
       }
 
       const position = cameraPosRef.current.clone();
-      
+
       // Move 1.5 meters forward, and estimate floor is ~1 meter below the camera lens
       position.add(direction.multiplyScalar(1.5));
-      position.y -= 1.0; 
+      position.y -= 1.0;
 
       placeItem(
         activeProduct,
@@ -110,7 +110,7 @@ export default function XRHitTestCursor() {
       if (!isStabilized) {
         setStabilized(true);
       }
-      
+
       const success = getWorldMatrix(matrixHelper, results[0]);
       if (success) {
         matrixHelper.decompose(
