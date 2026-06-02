@@ -166,8 +166,14 @@ export default function WebXREditor() {
   const handleEnterAR = useCallback(async () => {
     try {
       const overlay = document.getElementById('ar-ui-overlay');
-      if (overlay) store.sessionInit = { ...store.sessionInit, domOverlay: { root: overlay } };
-      await store.enterAR();
+      // In @react-three/xr v6, pass session init options directly to enterAR()
+      // Do NOT mutate store.sessionInit — it is undefined and will crash
+      const sessionInit = {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay', 'light-estimation'],
+        ...(overlay ? { domOverlay: { root: overlay } } : {}),
+      };
+      await store.enterAR(sessionInit);
     } catch (err) {
       console.error('enterAR failed:', err);
       alert(`AR failed: ${err.message || err}`);
