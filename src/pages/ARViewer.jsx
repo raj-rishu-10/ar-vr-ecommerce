@@ -23,7 +23,6 @@ export default function ARViewer() {
   const [toast, setToast] = useState('');
   const [isARMode, setIsARMode] = useState(false);
   const [arSupported, setArSupported] = useState(undefined);
-  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     const ua = navigator.userAgent;
@@ -94,10 +93,9 @@ export default function ARViewer() {
           className="ar-btn-back"
         >←</button>
 
-        <div className="ar-info-toggle" onClick={() => setShowInfo(!showInfo)}>
+        <div className="ar-status-indicator">
           <span className={`ar-status-dot ${isLoading ? 'loading' : 'ready'}`} />
-          {isLoading ? 'Loading 3D...' : '3D Viewer'}
-          <span className="ar-info-icon">ℹ️</span>
+          {isLoading ? 'Loading 3D...' : 'Interactive 3D Viewer'}
         </div>
 
         {cartCount > 0 ? (
@@ -108,40 +106,21 @@ export default function ARViewer() {
           >
             🛒 {cartCount}
           </motion.button>
-        ) : <div   className="extracted-ui-54"/>}
+        ) : <div />}
       </div>
 
-      {/* ── Product Info Panel (Toggleable) ────────────────── */}
-      <AnimatePresence>
-        {showInfo && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="ar-info-panel"
-          >
-            <div className="ar-info-header">
-              <h3 className="ar-info-title">{activeProduct.name}</h3>
-              <span className="ar-info-price">${activeProduct.price}</span>
-            </div>
-            <p className="ar-info-desc">
-              {activeProduct.description}
-            </p>
-            <div className="ar-info-specs">
-              <div className="ar-spec-block">
-                <div className="ar-spec-label">Dimensions</div>
-                <div className="ar-spec-value">
-                  {activeProduct.dimensions?.width}x{activeProduct.dimensions?.height}x{activeProduct.dimensions?.depth} cm
-                </div>
-              </div>
-              <div className="ar-spec-block">
-                <div className="ar-spec-label">Material</div>
-                <div className="ar-spec-value">Premium Grade</div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── Persistent Product Info & Dimensions ────────────────── */}
+      <div className="ar-persistent-info">
+        <h3 className="ar-info-title">{activeProduct.name}</h3>
+        <span className="ar-info-price">${activeProduct.price}</span>
+        
+        <div className="ar-dimensions-box">
+          <div className="dim-label">DIMENSIONS (W×H×D)</div>
+          <div className="dim-value">
+            {activeProduct.dimensions?.width} × {activeProduct.dimensions?.height} × {activeProduct.dimensions?.depth} cm
+          </div>
+        </div>
+      </div>
 
       {/* ── 3D Model Viewer ─────────────────────────────────── */}
       <model-viewer
