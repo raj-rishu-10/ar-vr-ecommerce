@@ -21,8 +21,34 @@ export default function XRHitTestCursor() {
     camera.getWorldDirection(cameraDirRef.current);
   });
 
+  const activeItemId = useARSceneStore((s) => s.activeItemId);
+  const updateTransform = useARSceneStore((s) => s.updateTransform);
+
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragFrames = useRef(0);
+
+  // Track touch events to support drag-to-move for the active object
+  useEffect(() => {
+    const onTouchStart = () => { setIsDragging(true); dragFrames.current = 0; };
+    const onTouchEnd = () => { setIsDragging(false); };
+    const onTouchMove = () => { if (isDragging) dragFrames.current += 1; };
+
+    window.addEventListener('touchstart', onTouchStart);
+    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchmove', onTouchMove);
+
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [isDragging]);
+
   const handleTapToPlace = useCallback((event) => {
     if (!activeProduct) return;
+    
+    // If the user was dragging the screen (to move an object), do NOT place a new one!
+    if (dragFrames.current > 5) return;
 
     // If WebXR found a surface, place it exactly on the cyan ring
     if (ringRef.current && ringRef.current.visible) {
@@ -55,7 +81,7 @@ export default function XRHitTestCursor() {
         activeProduct.modelScale || [1, 1, 1]
       );
     }
-  }, [activeProduct, placeItem, camera]);
+  }, [activeProduct, placeItem]);
 
   // Use native WebXR 'select' event instead of DOM events
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
@@ -90,6 +116,11 @@ export default function XRHitTestCursor() {
         ringRef.current.quaternion.identity();
         ringRef.current.scale.set(1, 1, 1);
         ringRef.current.visible = true;
+
+        // DRAG-TO-MOVE LOGIC: Update active item position to match hit-test while dragging
+        if (isDragging && activeItemId && dragFrames.current > 5) {
+          updateTransform(activeItemId, { position: ringRef.current.position.toArray() });
+        }
       } else {
         ringRef.current.visible = false;
       }

@@ -256,6 +256,14 @@ export default function WebXREditor() {
           <div className="item-tools">
             <button id="btn-duplicate" className="btn-icon duplicate" onClick={() => duplicateItem(activeItemId)}>📑</button>
             <button id="btn-delete" className="btn-icon delete" onClick={() => deleteItem(activeItemId)}>🗑️</button>
+            <button className="btn-icon rotate" onClick={() => {
+              const item = placedItems.find(i => i.id === activeItemId);
+              if (item) useARSceneStore.getState().updateTransform(activeItemId, { rotation: [item.rotation[0], item.rotation[1] - Math.PI / 8, item.rotation[2]] });
+            }}>↺</button>
+            <button className="btn-icon rotate" onClick={() => {
+              const item = placedItems.find(i => i.id === activeItemId);
+              if (item) useARSceneStore.getState().updateTransform(activeItemId, { rotation: [item.rotation[0], item.rotation[1] + Math.PI / 8, item.rotation[2]] });
+            }}>↻</button>
           </div>
         )}
 
