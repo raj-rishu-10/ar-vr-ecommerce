@@ -24,7 +24,7 @@ export default function RoomCanvas({ xrStore }) {
         shadows
       >
         <Suspense fallback={null}>
-          <XR store={xrStore}>
+          <group>
             <Environment preset="city" />
             <ambientLight intensity={0.5} />
             <directionalLight castShadow position={[5, 10, 5]} intensity={1} shadow-mapSize={[1024, 1024]} />
@@ -47,7 +47,7 @@ export default function RoomCanvas({ xrStore }) {
               enablePan={true}
               maxPolarAngle={Math.PI / 2 - 0.05} // Don't go below floor
             />
-          </XR>
+          </group>
         </Suspense>
       </Canvas>
     </div>

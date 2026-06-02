@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export const useFurnitureStore = create((set, get) => ({
   placedItems: [],
   activeItemId: null,
-  interactionMode: 'select', // 'select', 'move', 'rotate', 'scale'
+  interactionMode: 'select', // 'select', 'translate', 'rotate', 'scale'
   
   addFurniture: (item) => {
     const newItem = {
@@ -16,7 +16,7 @@ export const useFurnitureStore = create((set, get) => ({
     set((state) => ({ 
       placedItems: [...state.placedItems, newItem],
       activeItemId: newItem.instanceId,
-      interactionMode: 'move'
+      interactionMode: 'translate'
     }));
   },
   
