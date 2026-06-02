@@ -436,8 +436,23 @@
     padding: max(env(safe-area-inset-top, 12px), 12px) 12px max(env(safe-area-inset-bottom, 16px), 16px);
   }
 
+  .top-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title-container {
+    position: relative;
+    left: auto;
+    transform: none;
+    text-align: left;
+    margin-left: 12px;
+    flex: 1;
+    min-width: 120px;
+  }
+
   .title-main {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   .btn-tool {
