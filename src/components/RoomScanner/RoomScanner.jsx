@@ -22,6 +22,7 @@ export default function RoomScanner({ onClose }) {
 
     depthWorkerRef.current.onmessage = (e) => {
       if (e.data.type === 'STATUS') setStatus(`Depth Model: ${e.data.status}`);
+      if (e.data.type === 'ERROR') setStatus(`Depth Model Error: ${e.data.error}`);
       if (e.data.type === 'RESULT') {
         setStatus('Processing Depth Map...');
         // The output is a raw greyscale array from transformers.js
