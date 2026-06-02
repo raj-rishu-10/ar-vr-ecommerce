@@ -23,6 +23,8 @@ export default function ARViewer() {
   const [toast, setToast] = useState('');
   const [isARMode, setIsARMode] = useState(false);
   const [arSupported, setArSupported] = useState(undefined);
+  const [show3DScale, setShow3DScale] = useState(false);
+  const [modelDims, setModelDims] = useState(null);
 
   useEffect(() => {
     const ua = navigator.userAgent;
@@ -35,7 +37,17 @@ export default function ARViewer() {
     const mv = mvRef.current;
     if (!mv) return;
 
-    const onLoad = () => { setIsLoading(false); setHasError(false); };
+    const onLoad = () => { 
+      setIsLoading(false); 
+      setHasError(false);
+      // Capture 3D bounding box for scale lines
+      if (mv.getBoundingBoxExtents && mv.getBoundingBoxCenter) {
+        setModelDims({
+          extents: mv.getBoundingBoxExtents(),
+          center: mv.getBoundingBoxCenter()
+        });
+      }
+    };
     const onError = () => { setIsLoading(false); setHasError(true); };
     const onArStatus = (e) => {
       setIsARMode(e.detail.status === 'session-started' || e.detail.status === 'object-placed');
@@ -120,6 +132,13 @@ export default function ARViewer() {
             {activeProduct.dimensions?.width} × {activeProduct.dimensions?.height} × {activeProduct.dimensions?.depth} cm
           </div>
         </div>
+
+        <button 
+          className={`ar-btn-toggle-scale ${show3DScale ? 'active' : ''}`}
+          onClick={() => setShow3DScale(!show3DScale)}
+        >
+          {show3DScale ? 'Hide 3D Scale' : '📏 Show 3D Scale'}
+        </button>
       </div>
 
       {/* ── 3D Model Viewer ─────────────────────────────────── */}
@@ -145,6 +164,40 @@ export default function ARViewer() {
         className="ar-model-viewer"
       >
         <button slot="ar-button"   className="extracted-ui-55"/>
+
+        {show3DScale && modelDims && (
+          <>
+            {/* Width (X-axis) - Top edge */}
+            <div 
+              slot="hotspot-width" 
+              className="hotspot-dim" 
+              data-position={`${modelDims.center.x} ${modelDims.center.y + modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}
+              data-normal="0 1 0"
+            >
+              <div className="hotspot-label width">{activeProduct.dimensions?.width} cm</div>
+            </div>
+            
+            {/* Height (Y-axis) - Left edge */}
+            <div 
+              slot="hotspot-height" 
+              className="hotspot-dim" 
+              data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y} ${modelDims.center.z + modelDims.extents.z / 2}`}
+              data-normal="-1 0 0"
+            >
+              <div className="hotspot-label height">{activeProduct.dimensions?.height} cm</div>
+            </div>
+
+            {/* Depth (Z-axis) - Bottom right edge */}
+            <div 
+              slot="hotspot-depth" 
+              className="hotspot-dim" 
+              data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z}`}
+              data-normal="1 0 0"
+            >
+              <div className="hotspot-label depth">{activeProduct.dimensions?.depth} cm</div>
+            </div>
+          </>
+        )}
       </model-viewer>
 
       {/* ── Overlays ────────────────────────────────────────── */}
