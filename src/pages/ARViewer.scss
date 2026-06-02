@@ -221,14 +221,11 @@
 }
 
 .ar-bottom-controls {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   z-index: 20;
-  background: linear-gradient(to top, rgba(10,10,15,0.98) 70%, transparent);
-  padding: 0 16px max(env(safe-area-inset-bottom, 24px), 24px);
-  pointer-events: none;
+  background: rgba(10, 10, 15, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 20px 16px max(env(safe-area-inset-bottom, 24px), 24px);
 }
 
 .ar-controls-container {
@@ -378,7 +375,7 @@
   }
 
   .ar-bottom-controls {
-    padding: 0 12px max(env(safe-area-inset-bottom, 16px), 16px);
+    padding: 16px 12px max(env(safe-area-inset-bottom, 16px), 16px);
   }
 
   .ar-btn-action {
