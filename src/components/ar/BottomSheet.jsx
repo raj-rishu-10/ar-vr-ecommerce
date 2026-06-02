@@ -30,11 +30,10 @@ export default function BottomSheet({ products, onAdd, onClose }) {
             <button className="extracted-ui-2 btn-icon"  onClick={onClose}>✕</button>
           </div>
           <input
-            className="form-control form-aura"
+            className="form-control form-aura fs-85"
             placeholder="🔍 Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="fs-85"
           />
         </div>
         <div className="bottom-sheet-body">
