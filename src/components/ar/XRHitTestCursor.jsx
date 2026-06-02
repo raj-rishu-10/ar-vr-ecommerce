@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useXRHitTest, useXRInputSourceEvent } from '@react-three/xr';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useARSceneStore } from '../../store/useARSceneStore';
 
@@ -24,7 +24,7 @@ export default function XRHitTestCursor() {
   const activeItemId = useARSceneStore((s) => s.activeItemId);
   const updateTransform = useARSceneStore((s) => s.updateTransform);
 
-  const [isDragging, setIsDragging] = React.useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const dragFrames = useRef(0);
 
   // Track touch events to support drag-to-move for the active object
