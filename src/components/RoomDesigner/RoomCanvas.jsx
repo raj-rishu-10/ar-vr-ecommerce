@@ -8,7 +8,7 @@ import FloorComponent from './FloorComponent';
 import WallComponent from './WallComponent';
 import FurnitureManager from '../FurniturePlacement/FurnitureManager';
 
-export default function RoomCanvas() {
+export default function RoomCanvas({ xrStore }) {
   const { dimensions } = useRoomStore();
   const { activeView, isOrthographic } = useCameraStore();
 
@@ -24,7 +24,7 @@ export default function RoomCanvas() {
         shadows
       >
         <Suspense fallback={null}>
-          <XR>
+          <XR store={xrStore}>
             <Environment preset="city" />
             <ambientLight intensity={0.5} />
             <directionalLight castShadow position={[5, 10, 5]} intensity={1} shadow-mapSize={[1024, 1024]} />

@@ -6,7 +6,9 @@ import { useFurnitureStore } from '../../stores/useFurnitureStore';
 import RoomCanvas from './RoomCanvas';
 import RoomScanner from '../RoomScanner/RoomScanner';
 import products from '../../data/products.json';
-import { ARButton } from '@react-three/xr';
+import { createXRStore } from '@react-three/xr';
+
+const xrStore = createXRStore();
 
 export default function RoomDesignerLayout() {
   const { setDimensions, wallMaterial, setWallMaterial } = useRoomStore();
@@ -58,7 +60,7 @@ export default function RoomDesignerLayout() {
     <div style={{ display: 'flex', height: '100vh', width: '100vw', background: '#fff', fontFamily: 'system-ui, sans-serif' }}>
       
       {/* Sidebar: Room Settings */}
-      <aside style={{ width: '300px', background: '#f8fafc', borderRight: '1px solid #e2e8f0', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', zIndex: 10 }}>
+      <aside style={{ width: '300px', background: '#f8fafc', color: '#0f172a', borderRight: '1px solid #e2e8f0', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', zIndex: 10 }}>
         <h2>Room Settings</h2>
         
         <button 
@@ -132,7 +134,7 @@ export default function RoomDesignerLayout() {
       </aside>
 
       {/* Main Canvas Area */}
-      <main style={{ flex: 1, position: 'relative' }}>
+      <main style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
         
         {/* Top Toolbar (Furniture Interactions) */}
         <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', gap: '10px', background: '#fff', padding: '10px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
@@ -161,12 +163,14 @@ export default function RoomDesignerLayout() {
         </div>
 
         {/* WebXR AR Button Overlay */}
-        <ARButton 
+        <button 
+          onClick={() => xrStore.enterAR()}
           style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 10, padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}
-          sessionInit={{ requiredFeatures: ['hit-test'] }}
-        />
+        >
+          Enter AR
+        </button>
 
-        <RoomCanvas />
+        <RoomCanvas xrStore={xrStore} />
       </main>
 
       {showScanner && <RoomScanner onClose={() => setShowScanner(false)} />}
