@@ -20,17 +20,10 @@ export default function FurnitureItem({ item }) {
   const size = boundingBox.getSize(new THREE.Vector3());
 
   return (
-    <group 
-      position={item.position} 
-      rotation={item.rotation} 
-      scale={item.scale}
-      onClick={(e) => {
-        e.stopPropagation();
-        setActiveItem(item.instanceId);
-      }}
-    >
-      {isActive && interactionMode !== 'select' ? (
+    <group>
+      {isActive && interactionMode !== 'select' && (
         <TransformControls 
+          object={groupRef}
           mode={interactionMode}
           translationSnap={0.1} // Snap to 10cm grid
           rotationSnap={Math.PI / 4} // Snap to 45 degrees
@@ -47,18 +40,30 @@ export default function FurnitureItem({ item }) {
               pos.x = THREE.MathUtils.clamp(pos.x, -halfW + paddingX, halfW - paddingX);
               pos.z = THREE.MathUtils.clamp(pos.z, -halfD + paddingZ, halfD - paddingZ);
               pos.y = Math.max(0, pos.y); // Snap to floor or above
+              
+              // Apply clamping back to the ref immediately
+              groupRef.current.position.copy(pos);
 
               updateFurnitureTransform(item.instanceId, 'position', pos.toArray());
               updateFurnitureTransform(item.instanceId, 'rotation', groupRef.current.rotation.toArray());
               updateFurnitureTransform(item.instanceId, 'scale', groupRef.current.scale.toArray());
             }
           }}
-        >
-          <primitive object={clonedScene} ref={groupRef} castShadow receiveShadow />
-        </TransformControls>
-      ) : (
-        <primitive object={clonedScene} castShadow receiveShadow />
+        />
       )}
+
+      <group 
+        ref={groupRef}
+        position={item.position} 
+        rotation={item.rotation} 
+        scale={item.scale}
+        onClick={(e) => {
+          e.stopPropagation();
+          setActiveItem(item.instanceId);
+        }}
+      >
+        <primitive object={clonedScene} castShadow receiveShadow />
+      </group>
     </group>
   );
 }
