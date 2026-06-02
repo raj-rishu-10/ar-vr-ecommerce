@@ -264,6 +264,14 @@ export default function WebXREditor() {
               const item = placedItems.find(i => i.id === activeItemId);
               if (item) useARSceneStore.getState().updateTransform(activeItemId, { rotation: [item.rotation[0], item.rotation[1] + Math.PI / 8, item.rotation[2]] });
             }}>↻</button>
+            <button className="btn-icon scale" onClick={() => {
+              const item = placedItems.find(i => i.id === activeItemId);
+              if (item) useARSceneStore.getState().updateTransform(activeItemId, { scale: item.scale.map(s => s * 1.1) });
+            }}>➕</button>
+            <button className="btn-icon scale" onClick={() => {
+              const item = placedItems.find(i => i.id === activeItemId);
+              if (item) useARSceneStore.getState().updateTransform(activeItemId, { scale: item.scale.map(s => s * 0.9) });
+            }}>➖</button>
           </div>
         )}
 
