@@ -15,7 +15,7 @@ export default function XRHitTestCursor() {
   const handleTapToPlace = useCallback((event) => {
     // Only place if the ring is currently visible (a surface is found)
     if (!ringRef.current || !activeProduct || !ringRef.current.visible) {
-      alert("No surface detected! Point at the floor and wait for the cyan ring to appear before tapping.");
+      // Silently ignore taps when no surface is detected, as native alerts break the WebXR session
       return;
     }
     placeItem(
