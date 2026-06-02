@@ -53,12 +53,12 @@
 }
 
 .ar-not-supported {
-  background: rgba(10, 10, 20, 0.95);
+  background: rgba(15, 15, 25, 1);
   border-radius: 20px;
-  padding: 20px 28px;
+  padding: 24px 32px;
   text-align: center;
-  border: 1px solid rgba(255, 100, 100, 0.3);
-  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
   max-width: 85vw;
 }
 
@@ -116,10 +116,10 @@
 }
 
 .webxr-editor-container {
-  width: 100vw;
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
   background: linear-gradient(160deg, #0a0a1a 0%, #0d0d2b 50%, #0a1020 100%);
-  position: relative;
   overflow: hidden;
 }
 
