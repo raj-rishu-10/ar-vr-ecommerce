@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useXRInputSourceEvent, useXRHitTest, useXRStore } from '@react-three/xr';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useStore } from 'zustand';
 import { useARSceneStore } from '../../store/useARSceneStore';
 import * as THREE from 'three';
@@ -12,19 +12,42 @@ export default function XRHitTestCursor() {
   const placeItem = useARSceneStore((s) => s.placeItem);
   const activeProduct = useARSceneStore((s) => s.activeProduct);
 
+  const { camera } = useThree();
+
   const handleTapToPlace = useCallback((event) => {
-    // Only place if the ring is currently visible (a surface is found)
-    if (!ringRef.current || !activeProduct || !ringRef.current.visible) {
-      // Silently ignore taps when no surface is detected, as native alerts break the WebXR session
-      return;
+    if (!activeProduct) return;
+
+    // If WebXR found a surface, place it exactly on the cyan ring
+    if (ringRef.current && ringRef.current.visible) {
+      placeItem(
+        activeProduct,
+        ringRef.current.position.toArray(),
+        [0, 0, 0],
+        activeProduct.modelScale || [1, 1, 1]
+      );
+    } else {
+      // FALLBACK: If no surface is detected (common on featureless tables or weak ARCore),
+      // force place the object 1.5 meters in front of the user's camera on an estimated floor plane.
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.y = 0; // flatten to ground plane
+      direction.normalize();
+
+      const position = new THREE.Vector3();
+      camera.getWorldPosition(position);
+      
+      // Move 1.5 meters forward, and estimate floor is ~1 meter below the camera lens
+      position.add(direction.multiplyScalar(1.5));
+      position.y = -1.0; 
+
+      placeItem(
+        activeProduct,
+        position.toArray(),
+        [0, 0, 0],
+        activeProduct.modelScale || [1, 1, 1]
+      );
     }
-    placeItem(
-      activeProduct,
-      ringRef.current.position.toArray(),
-      [0, 0, 0], // ARCore often provides weird rotations, we keep objects upright
-      activeProduct.modelScale || [1, 1, 1]
-    );
-  }, [activeProduct, placeItem]);
+  }, [activeProduct, placeItem, camera]);
 
   // Use native WebXR 'select' event instead of DOM events
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
