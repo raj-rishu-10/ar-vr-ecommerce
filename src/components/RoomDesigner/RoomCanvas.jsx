@@ -29,12 +29,15 @@ export default function RoomCanvas() {
           
           <group position={[0, 0, 0]}>
             <FloorComponent width={dimensions.width} depth={dimensions.depth} />
+            {activeView === 'top' && (
+              <gridHelper args={[Math.max(dimensions.width, dimensions.depth), Math.max(dimensions.width, dimensions.depth) * 10, '#000000', '#cccccc']} position={[0, 0.01, 0]} />
+            )}
             <WallComponent width={dimensions.width} height={dimensions.height} depth={dimensions.depth} />
             
             <FurnitureManager />
           </group>
 
-          <ContactShadows position={[0, -0.01, 0]} opacity={0.4} scale={20} blur={2} far={10} />
+          <ContactShadows position={[0, 0.01, 0]} opacity={0.4} scale={20} blur={2} far={10} />
           
           <OrbitControls 
             makeDefault 
