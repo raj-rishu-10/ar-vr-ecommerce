@@ -429,3 +429,48 @@
     transform: rotate(360deg);
   }
 }
+
+/* ===== Responsive Breakpoints ===== */
+@media (max-width: 768px) {
+  .ui-overlay {
+    padding: max(env(safe-area-inset-top, 12px), 12px) 12px max(env(safe-area-inset-bottom, 16px), 16px);
+  }
+
+  .title-main {
+    font-size: 0.9rem;
+  }
+
+  .btn-tool {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .btn-enter-ar {
+    padding: 14px 32px;
+    font-size: 1rem;
+  }
+
+  .ar-not-supported {
+    max-width: 92vw;
+    padding: 16px 20px;
+  }
+
+  .product-carousel-container {
+    padding: 12px;
+  }
+
+  .product-item {
+    width: 54px;
+    height: 54px;
+  }
+
+  .item-tools {
+    right: 12px;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+}
