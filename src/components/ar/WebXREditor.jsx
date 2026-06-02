@@ -141,16 +141,18 @@ function EnterARButtonDOM({ onEnter }) {
 // ── Main page ─────────────────────────────────────────────────
 export default function WebXREditor() {
   const navigate = useNavigate();
-  const activeProduct   = useARSceneStore((s) => s.activeProduct);
-  const setActiveProduct= useARSceneStore((s) => s.setActiveProduct);
-  const activeItemId    = useARSceneStore((s) => s.activeItemId);
-  const deleteItem      = useARSceneStore((s) => s.deleteItem);
-  const duplicateItem   = useARSceneStore((s) => s.duplicateItem);
-  const undo            = useARSceneStore((s) => s.undo);
-  const saveScene       = useARSceneStore((s) => s.saveScene);
-  const loadScene       = useARSceneStore((s) => s.loadScene);
-  const placedItems     = useARSceneStore((s) => s.placedItems);
-  const isStabilized    = useARSceneStore((s) => s.isStabilized);
+  const activeProduct    = useARSceneStore((s) => s.activeProduct);
+  const setActiveProduct = useARSceneStore((s) => s.setActiveProduct);
+  const activeItemId     = useARSceneStore((s) => s.activeItemId);
+  const deleteItem       = useARSceneStore((s) => s.deleteItem);
+  const duplicateItem    = useARSceneStore((s) => s.duplicateItem);
+  const undo             = useARSceneStore((s) => s.undo);
+  const saveScene        = useARSceneStore((s) => s.saveScene);
+  const loadScene        = useARSceneStore((s) => s.loadScene);
+  const placedItems      = useARSceneStore((s) => s.placedItems);
+  const isStabilized     = useARSceneStore((s) => s.isStabilized);
+  const interactionMode  = useARSceneStore((s) => s.interactionMode);
+  const setPlacementMode = useARSceneStore((s) => s.setPlacementMode);
 
   const [inSession, setInSession]   = React.useState(false);
   const [canvasReady, setCanvasReady] = React.useState(false);
@@ -251,9 +253,17 @@ export default function WebXREditor() {
           </div>
         )}
 
+        {/* Mode indicator badge — shows in AR session */}
+        {inSession && isStabilized && (
+          <div className="mode-indicator">
+            {interactionMode === 'place' ? '📍 Tap to Place' : '✋ Tap to Move'}
+          </div>
+        )}
+
         {/* Item tools */}
         {activeItemId && (
           <div className="item-tools">
+            <button className="btn-icon add-new" onClick={setPlacementMode}>➕</button>
             <button id="btn-duplicate" className="btn-icon duplicate" onClick={() => duplicateItem(activeItemId)}>📑</button>
             <button id="btn-delete" className="btn-icon delete" onClick={() => deleteItem(activeItemId)}>🗑️</button>
             <button className="btn-icon rotate" onClick={() => {
@@ -266,12 +276,12 @@ export default function WebXREditor() {
             }}>↻</button>
             <button className="btn-icon scale" onClick={() => {
               const item = placedItems.find(i => i.id === activeItemId);
-              if (item) useARSceneStore.getState().updateTransform(activeItemId, { scale: item.scale.map(s => s * 1.1) });
-            }}>➕</button>
+              if (item) useARSceneStore.getState().updateTransform(activeItemId, { scale: item.scale.map(s => s * 1.15) });
+            }}>🔼</button>
             <button className="btn-icon scale" onClick={() => {
               const item = placedItems.find(i => i.id === activeItemId);
-              if (item) useARSceneStore.getState().updateTransform(activeItemId, { scale: item.scale.map(s => s * 0.9) });
-            }}>➖</button>
+              if (item) useARSceneStore.getState().updateTransform(activeItemId, { scale: item.scale.map(s => s * 0.85) });
+            }}>🔽</button>
           </div>
         )}
 

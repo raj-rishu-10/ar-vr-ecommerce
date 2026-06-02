@@ -6,12 +6,21 @@ export const useARSceneStore = create((set, get) => ({
   activeItemId: null,
   activeProduct: null, // The product currently selected in the bottom carousel to be placed
   isStabilized: false, // Whether ARCore has detected a surface
+  
+  // MODE SYSTEM: 'place' = next tap places a new object, 'move' = next tap moves selected object
+  interactionMode: 'place',
 
   setStabilized: (stabilized) => set({ isStabilized: stabilized }),
   
-  setActiveProduct: (product) => set({ activeProduct: product }),
+  setActiveProduct: (product) => set({ activeProduct: product, interactionMode: 'place' }),
 
   setActiveItemId: (id) => set({ activeItemId: id }),
+
+  // Switch to placement mode (user wants to add a new item)
+  setPlacementMode: () => set({ interactionMode: 'place', activeItemId: null }),
+
+  // Switch to move mode (user wants to reposition the selected item)
+  setMoveMode: () => set({ interactionMode: 'move' }),
 
   placeItem: (product, position, rotation, scale) => set((state) => {
     const newItem = { id: crypto.randomUUID(), product, position, rotation, scale };
@@ -19,7 +28,8 @@ export const useARSceneStore = create((set, get) => ({
     return { 
       placedItems: newPlacedItems,
       history: [...state.history, state.placedItems], // push old state to history
-      activeItemId: newItem.id // Auto-select the newly placed item
+      activeItemId: newItem.id, // Auto-select the newly placed item
+      interactionMode: 'move' // After placing, switch to move mode so next tap moves it
     };
   }),
 
@@ -36,7 +46,8 @@ export const useARSceneStore = create((set, get) => ({
     return {
       placedItems: newPlacedItems,
       history: [...state.history, state.placedItems],
-      activeItemId: state.activeItemId === id ? null : state.activeItemId
+      activeItemId: state.activeItemId === id ? null : state.activeItemId,
+      interactionMode: 'place' // Go back to placement mode after deleting
     };
   }),
 
@@ -46,7 +57,7 @@ export const useARSceneStore = create((set, get) => ({
 
     // Offset position slightly so it doesn't z-fight exactly
     const newPos = [...itemToClone.position];
-    newPos[0] += 0.2; // shift X slightly
+    newPos[0] += 0.3; // shift X slightly
 
     const newItem = {
       ...itemToClone,
@@ -58,7 +69,8 @@ export const useARSceneStore = create((set, get) => ({
     return {
       placedItems: newPlacedItems,
       history: [...state.history, state.placedItems],
-      activeItemId: newItem.id
+      activeItemId: newItem.id,
+      interactionMode: 'move'
     };
   }),
 
@@ -68,14 +80,16 @@ export const useARSceneStore = create((set, get) => ({
     return {
       placedItems: previousState,
       history: state.history.slice(0, -1),
-      activeItemId: null // clear selection on undo to avoid ghost selection
+      activeItemId: null, // clear selection on undo to avoid ghost selection
+      interactionMode: 'place'
     };
   }),
 
   clearScene: () => set((state) => ({
     placedItems: [],
     history: [...state.history, state.placedItems],
-    activeItemId: null
+    activeItemId: null,
+    interactionMode: 'place'
   })),
 
   // Feature: Save/Load from LocalStorage
@@ -92,7 +106,8 @@ export const useARSceneStore = create((set, get) => ({
         return {
           placedItems: parsed,
           history: [...state.history, state.placedItems], // push old state before loading
-          activeItemId: null
+          activeItemId: null,
+          interactionMode: 'place'
         };
       }
     } catch (err) {

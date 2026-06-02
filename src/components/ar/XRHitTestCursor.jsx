@@ -17,7 +17,7 @@ function CursorPreview({ product }) {
       if (child.isMesh) {
         child.material = child.material.clone();
         child.material.transparent = true;
-        child.material.opacity = 0.4;
+        child.material.opacity = 0.35;
       }
     });
     return cl;
@@ -34,6 +34,9 @@ export default function XRHitTestCursor() {
   const ringRef = useRef();
   const placeItem = useARSceneStore((s) => s.placeItem);
   const activeProduct = useARSceneStore((s) => s.activeProduct);
+  const interactionMode = useARSceneStore((s) => s.interactionMode);
+  const activeItemId = useARSceneStore((s) => s.activeItemId);
+  const updateTransform = useARSceneStore((s) => s.updateTransform);
 
   const { camera } = useThree();
 
@@ -45,79 +48,60 @@ export default function XRHitTestCursor() {
     camera.getWorldDirection(cameraDirRef.current);
   });
 
-  const activeItemId = useARSceneStore((s) => s.activeItemId);
-  const updateTransform = useARSceneStore((s) => s.updateTransform);
-
-  const [isDragging, setIsDragging] = useState(false);
-  const dragFrames = useRef(0);
   const lastPlacedTime = useRef(0);
 
-  // Track touch events to support drag-to-move for the active object
-  useEffect(() => {
-    const onTouchStart = () => { setIsDragging(true); dragFrames.current = 0; };
-    const onTouchEnd = () => { setIsDragging(false); };
-    const onTouchMove = () => { if (isDragging) dragFrames.current += 1; };
+  // Calculate a position in front of the camera (fallback when no surface detected)
+  const getFallbackPosition = useCallback(() => {
+    const direction = cameraDirRef.current.clone();
+    direction.y = 0;
+    if (direction.lengthSq() > 0) {
+      direction.normalize();
+    } else {
+      direction.set(0, 0, -1);
+    }
+    const position = cameraPosRef.current.clone();
+    position.add(direction.multiplyScalar(1.5));
+    position.y -= 1.0;
+    return position.toArray();
+  }, []);
 
-    window.addEventListener('touchstart', onTouchStart);
-    window.addEventListener('touchend', onTouchEnd);
-    window.addEventListener('touchmove', onTouchMove);
+  // Get the current ring position or fallback
+  const getCurrentTargetPosition = useCallback(() => {
+    if (ringRef.current && ringRef.current.visible) {
+      return ringRef.current.position.toArray();
+    }
+    return getFallbackPosition();
+  }, [getFallbackPosition]);
 
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchend', onTouchEnd);
-      window.removeEventListener('touchmove', onTouchMove);
-    };
-  }, [isDragging]);
-
-  const handleTapToPlace = useCallback((event) => {
+  const handleTapToPlace = useCallback(() => {
     if (!activeProduct) return;
-    
-    // If the user was dragging the screen (to move an object), do NOT place a new one!
-    if (dragFrames.current > 5) return;
 
-    // Debounce to prevent double-placement (DOM ar-tap + WebXR select firing together)
+    // Debounce: prevent double-fire from DOM ar-tap + WebXR select
     const now = performance.now();
-    if (now - lastPlacedTime.current < 400) return;
+    if (now - lastPlacedTime.current < 500) return;
     lastPlacedTime.current = now;
 
-    // If WebXR found a surface, place it exactly on the cyan ring
-    if (ringRef.current && ringRef.current.visible) {
+    const targetPos = getCurrentTargetPosition();
+
+    if (interactionMode === 'place') {
+      // PLACE MODE: Create a new object at the cursor position
       placeItem(
         activeProduct,
-        ringRef.current.position.toArray(),
+        targetPos,
         [0, 0, 0],
         activeProduct.modelScale || [1, 1, 1]
       );
-    } else {
-      // FALLBACK: Force place 1.5m in front of the tracked camera
-      const direction = cameraDirRef.current.clone();
-      direction.y = 0; // flatten to ground plane
-      if (direction.lengthSq() > 0) {
-        direction.normalize();
-      } else {
-        direction.set(0, 0, -1);
-      }
-
-      const position = cameraPosRef.current.clone();
-      
-      // Move 1.5 meters forward, and estimate floor is ~1 meter below the camera lens
-      position.add(direction.multiplyScalar(1.5));
-      position.y -= 1.0; 
-
-      placeItem(
-        activeProduct,
-        position.toArray(),
-        [0, 0, 0],
-        activeProduct.modelScale || [1, 1, 1]
-      );
+      // placeItem() automatically switches to 'move' mode in the store
+    } else if (interactionMode === 'move' && activeItemId) {
+      // MOVE MODE: Relocate the selected object to the cursor position
+      updateTransform(activeItemId, { position: targetPos });
     }
-  }, [activeProduct, placeItem]);
+  }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
 
-  // Use native WebXR 'select' event instead of DOM events
+  // Use native WebXR 'select' event
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
 
   // Fallback: Listen for custom DOM event from the overlay
-  // This bypasses bugs on OnePlus/Oppo phones where dom-overlay swallows the WebXR select event
   useEffect(() => {
     const onArTap = () => handleTapToPlace();
     window.addEventListener('ar-tap', onArTap);
@@ -140,17 +124,11 @@ export default function XRHitTestCursor() {
         matrixHelper.decompose(
           ringRef.current.position,
           ringRef.current.quaternion,
-          new THREE.Vector3() // ignore scale
+          new THREE.Vector3()
         );
-        // Keep the ring flat on the surface and force standard scale
         ringRef.current.quaternion.identity();
         ringRef.current.scale.set(1, 1, 1);
         ringRef.current.visible = true;
-
-        // DRAG-TO-MOVE LOGIC: Update active item position to match hit-test while dragging
-        if (isDragging && activeItemId && dragFrames.current > 5) {
-          updateTransform(activeItemId, { position: ringRef.current.position.toArray() });
-        }
       } else {
         ringRef.current.visible = false;
       }
@@ -159,10 +137,13 @@ export default function XRHitTestCursor() {
     }
   }, 'viewer');
 
+  // Show holographic preview only in placement mode
+  const showPreview = interactionMode === 'place' && activeProduct;
+
   return (
     <group ref={ringRef} visible={false}>
-      {/* 3D Holographic Preview of the selected furniture on the cursor */}
-      {activeProduct && !isDragging && (
+      {/* 3D Holographic Preview — only visible in placement mode */}
+      {showPreview && (
         <Suspense fallback={null}>
           <CursorPreview product={activeProduct} />
         </Suspense>
@@ -171,7 +152,10 @@ export default function XRHitTestCursor() {
       {/* Outer ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.15, 0.2, 32]} />
-        <meshBasicMaterial color="#00cec9" transparent opacity={0.8} depthTest={false} />
+        <meshBasicMaterial 
+          color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
+          transparent opacity={0.8} depthTest={false} 
+        />
       </mesh>
 
       {/* Inner dot */}

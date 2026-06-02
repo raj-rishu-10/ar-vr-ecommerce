@@ -11,19 +11,20 @@ export default function XRPlacedProduct({ item }) {
   
   const activeItemId = useARSceneStore((s) => s.activeItemId);
   const setActiveItemId = useARSceneStore((s) => s.setActiveItemId);
+  const setMoveMode = useARSceneStore((s) => s.setMoveMode);
   
   const isSelected = activeItemId === item.id;
 
   const handleSelect = () => {
     setActiveItemId(item.id);
+    setMoveMode(); // Switch to move mode when user taps on an existing object
   };
 
   const groupRef = useRef();
-  // Start at a small non-zero value so the object is visible immediately
   const currentScale = useRef(new THREE.Vector3(0.01, 0.01, 0.01));
   const targetScale = useMemo(() => new THREE.Vector3(...(item.scale || [1, 1, 1])), [item.scale]);
 
-  // Pop-in animation: smoothly scale the object up when it mounts
+  // Pop-in animation
   useFrame((state, delta) => {
     if (groupRef.current) {
       currentScale.current.lerp(targetScale, Math.min(delta * 10, 1));
@@ -33,16 +34,15 @@ export default function XRPlacedProduct({ item }) {
 
   return (
     <group ref={groupRef} position={item.position} rotation={item.rotation} onClick={handleSelect} onPointerUp={handleSelect}>
-      {/* Center the 3D model automatically and align it to the floor (y=0) */}
       <Center bottom>
         <primitive object={clone} />
       </Center>
 
-      {/* Selection Ring on the floor */}
+      {/* Small selection indicator ring on the floor */}
       {isSelected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-          <ringGeometry args={[0.5, 0.55, 32]} />
-          <meshBasicMaterial color="#00cec9" transparent opacity={0.8} depthTest={false} />
+          <ringGeometry args={[0.18, 0.22, 32]} />
+          <meshBasicMaterial color="#6c5ce7" transparent opacity={0.9} depthTest={false} />
         </mesh>
       )}
     </group>
