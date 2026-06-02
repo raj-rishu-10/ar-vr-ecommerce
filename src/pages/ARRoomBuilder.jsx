@@ -1,6 +1,6 @@
 import React from 'react';
-import WebXREditor from '../components/ar/WebXREditor';
+import RoomDesignerLayout from '../components/RoomDesigner/RoomDesignerLayout';
 
 export default function ARRoomBuilder() {
-  return <WebXREditor />;
+  return <RoomDesignerLayout />;
 }
