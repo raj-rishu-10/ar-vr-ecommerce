@@ -1761,3 +1761,93 @@ model-viewer::part(default-ar-button) {
   font-size: 0.7rem;
   padding: 3px 8px;
 }
+
+/* =========================================================================
+   Global Responsive Media Queries
+   ========================================================================= */
+
+/* Tablets & Smaller (max-width: 992px) */
+@media (max-width: 992px) {
+  .hero-title {
+    font-size: 3.5rem;
+  }
+  .section-title {
+    font-size: 2.2rem;
+  }
+  .filter-bar {
+    padding: 1rem;
+    margin: 1.5rem 0;
+  }
+  .extracted-ui-73 {
+    height: 280px;
+    font-size: 4rem;
+  }
+  .extracted-ui-86 {
+    height: 350px;
+  }
+}
+
+/* Mobile Devices (max-width: 768px) */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  .hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .section-title {
+    font-size: 1.8rem;
+  }
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  /* Buttons should stack and be full width on mobile where appropriate */
+  .hero .d-flex.gap-3 {
+    flex-direction: column;
+    gap: 1rem !important;
+  }
+  .hero .btn-aura, .hero .btn-aura-outline {
+    width: 100%;
+  }
+
+  /* Make product detail image even smaller on mobile */
+  .extracted-ui-86 {
+    height: 280px;
+  }
+
+  /* Cart Sidebar */
+  .cart-sidebar {
+    width: 100%;
+    max-width: none;
+    right: -100%;
+  }
+
+  /* Check out grids */
+  .checkout-container .col-lg-8,
+  .checkout-container .col-lg-4 {
+    padding: 0 0.5rem;
+  }
+  
+  /* Ensure modal heights are manageable */
+  .bottom-sheet {
+    max-height: 90vh;
+  }
+  
+  /* Increase padding on mobile to match iOS/Android safe areas */
+  .container {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+}
+
+/* Extra Small Phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 2.2rem;
+  }
+  .product-card-title {
+    font-size: 1rem;
+  }
+}
