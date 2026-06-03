@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useCameraStore } from '../../stores/useCameraStore';
@@ -34,11 +35,13 @@ const WALL_COLORS = [
 ];
 
 export default function RoomDesignerLayout() {
+  const location = useLocation();
+  const presetData = location.state;
   const { setDimensions, wallMaterial, setWallMaterial } = useRoomStore();
   const { activeView, setView } = useCameraStore();
   const { activeItemId, placedItems, interactionMode, setInteractionMode, clearRoom, addFurniture, removeFurniture, undo, redo, history, historyIndex } = useFurnitureStore();
   const [showScanner, setShowScanner] = useState(false);
-  const { projects, currentProjectId, saveCurrentProjectData } = useProjectStore();
+  const { projects, currentProjectId, saveCurrentProjectData, loadProjects } = useProjectStore();
   
   const [leftTab, setLeftTab] = useState('add'); // 'add' | 'list' | 'favorites'
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -104,7 +107,77 @@ export default function RoomDesignerLayout() {
 
   const isInitialMount = useRef(true);
 
-  // Initialize room data on mount
+  // Load projects from localStorage on mount
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  // Initialize room data on mount or when preset is passed
+  useEffect(() => {
+    if (presetData?.presetRoom) {
+      const existing = projects.find(p => p.name === presetData.presetRoom);
+      if (existing) {
+        useProjectStore.getState().setCurrentProject(existing.id);
+      } else {
+        const name = presetData.presetRoom;
+        const type = presetData.presetCategory || 'Bedroom';
+        
+        let dimensions = { width: 5, height: 3, depth: 5 };
+        let wallColor = '#ffffff';
+        let floorColor = '#e0e0e0';
+        
+        if (name.includes('Sophisticated')) {
+          dimensions = { width: 6, height: 3, depth: 5 };
+          wallColor = '#2b3e50';
+        } else if (name.includes('Nordic')) {
+          dimensions = { width: 6, height: 3, depth: 4 };
+          wallColor = '#d2dbd6';
+        } else if (name.includes('International')) {
+          dimensions = { width: 5, height: 3, depth: 6 };
+          wallColor = '#f5f5f0';
+        } else if (name.includes('Playfully')) {
+          dimensions = { width: 5, height: 3, depth: 5 };
+          wallColor = '#f0e5d8';
+        }
+
+        const initialSceneData = [];
+        let newActiveId = null;
+        if (presetData.addProduct) {
+          newActiveId = crypto.randomUUID();
+          initialSceneData.push({
+            ...presetData.addProduct,
+            instanceId: newActiveId,
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: presetData.addProduct.modelScale || [1, 1, 1]
+          });
+        }
+        
+        const newProjId = crypto.randomUUID();
+        const newProject = {
+          id: newProjId,
+          name,
+          type,
+          updatedAt: new Date().toISOString(),
+          thumbnail: presetData.addProduct?.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+          sceneData: initialSceneData,
+          roomData: { dimensions, wallMaterial: { color: wallColor }, floorMaterial: { color: floorColor, texture: 'wood' } }
+        };
+        
+        // Update projects store
+        useProjectStore.setState((state) => {
+          const updated = [newProject, ...state.projects];
+          localStorage.setItem('aura_projects', JSON.stringify(updated));
+          return { projects: updated, currentProjectId: newProjId };
+        });
+
+        if (newActiveId) {
+          useFurnitureStore.setState({ activeItemId: newActiveId, interactionMode: 'translate' });
+        }
+      }
+    }
+  }, [presetData, projects.length]);
+
   useEffect(() => {
     if (!currentProjectId) return;
     const project = projects.find(p => p.id === currentProjectId);
@@ -120,7 +193,7 @@ export default function RoomDesignerLayout() {
         useFurnitureStore.setState({ placedItems: project.sceneData });
       }
     }
-  }, [currentProjectId]);
+  }, [currentProjectId, projects]);
 
   // Auto-save when room or furniture changes
   useEffect(() => {

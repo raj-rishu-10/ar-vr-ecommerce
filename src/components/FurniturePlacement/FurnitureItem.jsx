@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useGLTF, Clone, Html } from '@react-three/drei';
+import { useGLTF, Html } from '@react-three/drei';
 import { Select } from '@react-three/postprocessing';
 import { useFurnitureStore } from '../../stores/useFurnitureStore';
 import * as THREE from 'three';
@@ -10,9 +10,21 @@ export default function FurnitureItem({ item, setRef }) {
   
   const isSelected = activeItemId === item.instanceId;
 
-  const box = useMemo(() => {
-    return new THREE.Box3().setFromObject(scene);
+  // Clone scene inside useMemo to keep mesh references stable
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone();
+    clone.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return clone;
   }, [scene]);
+
+  const box = useMemo(() => {
+    return new THREE.Box3().setFromObject(clonedScene);
+  }, [clonedScene]);
 
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
@@ -31,7 +43,7 @@ export default function FurnitureItem({ item, setRef }) {
       }}
     >
       <Select enabled={isSelected}>
-        <Clone object={scene} castShadow receiveShadow />
+        <primitive object={clonedScene} />
       </Select>
       
       {isSelected && (

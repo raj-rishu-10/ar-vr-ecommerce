@@ -1055,7 +1055,13 @@ export default function ProductDetail() {
 
                         {/* Interactive button */}
                         <button 
-                          onClick={() => navigate('/room-builder')}
+                          onClick={() => navigate('/room-builder', {
+                            state: {
+                              presetRoom: room.name,
+                              presetCategory: room.category,
+                              addProduct: product
+                            }
+                          })}
                           style={{
                             background: '#111111',
                             color: '#ffffff',
@@ -1472,7 +1478,16 @@ export default function ProductDetail() {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>Customise {product.name} inside our 3D room planner layout. Add multiple furniture components and see them live!</div>
-                  <button onClick={() => navigate('/room-builder')} className="action-btn-outline">
+                  <button 
+                    onClick={() => navigate('/room-builder', {
+                      state: {
+                        presetRoom: `Custom ${product.name} Design`,
+                        presetCategory: product.category,
+                        addProduct: product
+                      }
+                    })} 
+                    className="action-btn-outline"
+                  >
                     Launch Planning Tool
                   </button>
                 </div>
