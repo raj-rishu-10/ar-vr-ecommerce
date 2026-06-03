@@ -3,6 +3,13 @@ import { pipeline, env } from '@huggingface/transformers';
 // Skip local model check since we're using remote HF Hub
 env.allowLocalModels = false;
 
+// Timeout helper — resolves with `null` after `ms` milliseconds
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(() => resolve(null), ms))
+  ]);
+
 let depthPipelinePromise = null;
 
 // Listen for messages from the main thread
@@ -13,24 +20,22 @@ self.addEventListener('message', async (event) => {
     depthPipelinePromise = (async () => {
       try {
         self.postMessage({ type: 'STATUS', status: 'loading' });
-        const pipe = await pipeline('depth-estimation', 'onnx-community/depth-anything-v2-small', {
-          device: 'webgpu'
-        });
-        self.postMessage({ type: 'STATUS', status: 'ready' });
-        return pipe;
-      } catch (error) {
-        console.warn("WebGPU failed, falling back to WebAssembly", error);
-        try {
-          const pipe = await pipeline('depth-estimation', 'onnx-community/depth-anything-v2-small', {
-            device: 'wasm'
-          });
+        // Use wasm to avoid WebGPU console noise; cap at 25 s so it never hangs
+        const pipe = await withTimeout(
+          pipeline('depth-estimation', 'onnx-community/depth-anything-v2-small', { device: 'wasm' }),
+          25_000
+        );
+        if (pipe) {
           self.postMessage({ type: 'STATUS', status: 'ready' });
           return pipe;
-        } catch (fallbackError) {
-          console.error("WASM fallback also failed:", fallbackError);
-          self.postMessage({ type: 'STATUS', status: 'failed' });
-          return null; // Model could not load
+        } else {
+          self.postMessage({ type: 'STATUS', status: 'timeout' });
+          return null;
         }
+      } catch (error) {
+        console.warn('[depthWorker] WASM pipeline failed:', error.message);
+        self.postMessage({ type: 'STATUS', status: 'failed' });
+        return null;
       }
     })();
   }
@@ -38,18 +43,20 @@ self.addEventListener('message', async (event) => {
   if (type === 'PREDICT') {
     try {
       self.postMessage({ type: 'STATUS', status: 'processing', id });
-      
-      const pipe = await depthPipelinePromise;
+
+      // Wait at most 30 s for the pipeline (it might still be loading)
+      const pipe = await withTimeout(depthPipelinePromise, 30_000);
+
       if (pipe) {
         const output = await pipe(image);
         self.postMessage({ type: 'RESULT', id, result: output });
       } else {
-        // If pipeline failed to load, return mock result so UI doesn't hang
+        // Pipeline unavailable — return fallback immediately so UI continues
         self.postMessage({ type: 'RESULT', id, result: 'fallback-simulation' });
       }
     } catch (error) {
       self.postMessage({ type: 'ERROR', id, error: error.message });
-      // Proceed with simulation even on error
+      // Always send a RESULT so the UI never gets stuck
       self.postMessage({ type: 'RESULT', id, result: 'fallback-simulation' });
     }
   }

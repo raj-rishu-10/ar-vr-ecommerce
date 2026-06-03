@@ -1851,3 +1851,63 @@ model-viewer::part(default-ar-button) {
     font-size: 1rem;
   }
 }
+
+/* ===== GLOBAL MOBILE RESPONSIVENESS ===== */
+@media (max-width: 768px) {
+  /* Product Detail Page */
+  .product-layout-left, .product-layout-right {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+  }
+  .product-layout-right {
+    position: relative !important;
+    height: auto !important;
+    overflow-y: visible !important;
+    box-shadow: none !important;
+    border-left: none !important;
+  }
+
+  /* Room Designer Layout */
+  .room-header {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    padding: 10px !important;
+  }
+  .room-header-left {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e5e5e5 !important;
+  }
+  .room-header-right {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 10px !important;
+  }
+  .room-main {
+    flex-direction: column-reverse !important;
+  }
+  .room-sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 45vh !important;
+    border-right: none !important;
+    border-top: 1px solid #e5e5e5 !important;
+  }
+  .room-canvas-container {
+    height: 55vh !important;
+  }
+  .room-toolbar-top {
+    flex-wrap: wrap !important;
+  }
+  
+  /* Home Dashboard */
+  .dashboard-layout {
+    flex-direction: column !important;
+  }
+  .dashboard-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+  }
+}
