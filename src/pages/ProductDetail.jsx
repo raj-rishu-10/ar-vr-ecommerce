@@ -20,12 +20,87 @@ import {
   FiMoon,
   FiSun,
   FiX,
-  FiExternalLink
+  FiExternalLink,
+  FiChevronLeft,
+  FiChevronRight
 } from 'react-icons/fi';
 import useProductStore from '../store/productStore';
 import useCartStore from '../store/cartStore';
 import useSceneStore from '../store/sceneStore';
 import useProductDetailStore from '../store/productDetailStore';
+
+// Configuration presets for materials
+const CONFIG_MATERIALS = ['Wood', 'Metal', 'Glass', 'Plastic'];
+
+// Dataset for suggested room templates matching categories
+const SUGGESTED_ROOMS = [
+  {
+    id: 1,
+    name: 'Sophisticated bedroom suite',
+    category: 'Bedroom',
+    image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 2,
+    name: 'International modern bedroom',
+    category: 'Bedroom',
+    image: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 3,
+    name: 'Playfully contemporary bedroom',
+    category: 'Bedroom',
+    image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 4,
+    name: 'Minimalist guest sanctuary',
+    category: 'Bedroom',
+    image: 'https://images.unsplash.com/photo-1617806118233-18e1db207faf?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 5,
+    name: 'Elegant Nordic Dining Space',
+    category: 'Dining Room',
+    image: 'https://images.unsplash.com/photo-1617806118233-18e1db207faf?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 6,
+    name: 'Cozy Family Feast Area',
+    category: 'Dining Room',
+    image: 'https://images.unsplash.com/photo-1577140917170-285929fb55b7?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 7,
+    name: 'Open Space Lounge Hub',
+    category: 'Generic',
+    image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 8,
+    name: 'Classic Oak Family Room',
+    category: 'Living Room',
+    image: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 9,
+    name: 'Bright Loft Lounge Space',
+    category: 'Living Room',
+    image: 'https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 10,
+    name: 'Creative Studio Workplace',
+    category: 'Office',
+    image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 11,
+    name: 'Modern Executive Office Suite',
+    category: 'Office',
+    image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=600&auto=format&fit=crop'
+  }
+];
 
 // Helper to convert centimeters to fraction of inches e.g. "47 1/4\""
 const getInchesString = (cm) => {
@@ -449,7 +524,9 @@ export default function ProductDetail() {
   const [wished, setWished] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false); // Default to clean light IKEA theme
-  const [activeAccordion, setActiveAccordion] = useState('ar');
+  const [activeAccordion, setActiveAccordion] = useState('tryroom'); // Default to showroom view
+  const [selectedRoomFilter, setSelectedRoomFilter] = useState('Bedroom');
+  const [sliderIndex, setSliderIndex] = useState(0);
 
   const viewerContainerRef = useRef();
   const innerGroupRef = useRef();
@@ -683,6 +760,27 @@ export default function ProductDetail() {
     doc.save(`${product.name.replace(/\s+/g, '_')}_specifications.pdf`);
   };
 
+  // Filter suggested rooms logic
+  const filteredRooms = useMemo(() => {
+    return SUGGESTED_ROOMS.filter(r => r.category === selectedRoomFilter);
+  }, [selectedRoomFilter]);
+
+  const visibleRooms = useMemo(() => {
+    if (filteredRooms.length <= 3) return filteredRooms;
+    const start = Math.min(sliderIndex, filteredRooms.length - 3);
+    return filteredRooms.slice(start, start + 3);
+  }, [filteredRooms, sliderIndex]);
+
+  const handleNextSlide = () => {
+    if (filteredRooms.length <= 3) return;
+    setSliderIndex(prev => (prev + 1) % (filteredRooms.length - 2));
+  };
+
+  const handlePrevSlide = () => {
+    if (filteredRooms.length <= 3) return;
+    setSliderIndex(prev => (prev - 1 + (filteredRooms.length - 2)) % (filteredRooms.length - 2));
+  };
+
   // Standard Theme mapping values
   const theme = {
     bgPrimary: isDarkTheme ? 'var(--bg-primary)' : '#ffffff',
@@ -809,7 +907,7 @@ export default function ProductDetail() {
       {/* ── Main Layout Grid ── */}
       <div className="product-detail-grid">
         
-        {/* LEFT COLUMN: 3D Viewport Box */}
+        {/* LEFT COLUMN: 3D Viewport Box OR Showroom View */}
         <div ref={viewerContainerRef} style={{
           background: theme.bgViewport,
           position: 'relative',
@@ -819,235 +917,443 @@ export default function ProductDetail() {
           transition: 'background 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
           
-          {/* Breadcrumbs inside Viewport */}
-          <div style={{ position: 'absolute', top: 20, left: 30, zIndex: 10, fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}>
-            <Link to="/" style={{ color: '#0058a3', textDecoration: 'none', fontWeight: 600 }}>Home</Link>
-            <span style={{ color: '#767676' }}>/</span>
-            <Link to="/products" style={{ color: '#0058a3', textDecoration: 'none', fontWeight: 600 }}>Furniture</Link>
-            <span style={{ color: '#767676' }}>/</span>
-            <span style={{ color: theme.textPrimary, fontWeight: 700 }}>{product.name.toUpperCase()}</span>
-          </div>
-
-          {/* Mode Toggles directly on Viewport */}
-          <div style={{ position: 'absolute', top: 60, left: 30, zIndex: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setMeasurementMode('overall')}
-              style={{
-                background: measurementMode === 'overall' ? '#0058a3' : 'rgba(255, 255, 255, 0.85)',
-                color: measurementMode === 'overall' ? '#ffffff' : '#111111',
-                border: '1px solid rgba(0,0,0,0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                transition: 'all 0.2s'
-              }}
-            >
-              📐 Overall Dims
-            </button>
-            <button
-              onClick={() => setMeasurementMode('detailed')}
-              style={{
-                background: measurementMode === 'detailed' ? '#ff7675' : 'rgba(255, 255, 255, 0.85)',
-                color: measurementMode === 'detailed' ? '#ffffff' : '#111111',
-                border: '1px solid rgba(0,0,0,0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                transition: 'all 0.2s'
-              }}
-            >
-              📥 Inside Parts
-            </button>
-            <button
-              onClick={() => setMeasurementMode('custom')}
-              style={{
-                background: measurementMode === 'custom' ? '#00b894' : 'rgba(255, 255, 255, 0.85)',
-                color: measurementMode === 'custom' ? '#ffffff' : '#111111',
-                border: '1px solid rgba(0,0,0,0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                transition: 'all 0.2s'
-              }}
-            >
-              📍 Point Measure
-            </button>
-          </div>
-
-          {/* Custom mode banner */}
-          {measurementMode === 'custom' && (
+          {activeAccordion === 'tryroom' ? (
+            /* SHOWROOM VIEW (Matches Try BESTÅ in a room mockup exactly) */
             <div style={{
-              position: 'absolute',
-              top: 110,
-              left: 30,
-              right: 30,
-              zIndex: 10,
-              background: 'rgba(0, 184, 148, 0.1)',
-              border: '1px solid #00b894',
-              color: '#008a68',
-              padding: '10px 16px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              fontWeight: '700',
+              width: '100%',
+              height: '100%',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              backdropFilter: 'blur(10px)'
+              justifyContent: 'center',
+              padding: '40px',
+              position: 'relative',
+              boxSizing: 'border-box'
             }}>
-              <span>Select any 2 points on the 3D surface to measure distance.</span>
-              {customPoints.length > 0 && (
+              {/* Back to 3D Viewport navigation */}
+              <div style={{ position: 'absolute', top: 20, left: 30, zIndex: 10, fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}>
                 <button 
-                  onClick={clearCustomPoints}
+                  onClick={() => setActiveAccordion('')}
+                  style={{ background: 'none', border: 'none', color: '#0058a3', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                >
+                  ← Back to 3D Viewer
+                </button>
+              </div>
+
+              {/* Suggested Rooms Heading */}
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '800',
+                color: theme.textPrimary,
+                marginBottom: '32px',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}>
+                Suggested rooms
+              </h2>
+
+              {/* Options dot menu */}
+              <button style={{
+                position: 'absolute',
+                top: 20,
+                right: 30,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: theme.textSecondary,
+                fontSize: '22px'
+              }}>
+                •••
+              </button>
+
+              {/* Cards Carousel Layout */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '20px',
+                width: '100%',
+                maxWidth: '920px',
+                position: 'relative'
+              }}>
+                {/* Left navigation arrow */}
+                <button 
+                  onClick={handlePrevSlide}
+                  disabled={filteredRooms.length <= 3}
                   style={{
-                    background: '#00b894',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '2px 8px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer'
+                    background: '#ffffff',
+                    border: '1px solid #ddd',
+                    color: filteredRooms.length <= 3 ? '#ccc' : '#111',
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    cursor: filteredRooms.length <= 3 ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    zIndex: 5
                   }}
                 >
-                  Reset
+                  <FiChevronLeft size={20} />
                 </button>
-              )}
+
+                {/* Visible suggested rooms list */}
+                <div style={{
+                  display: 'flex',
+                  gap: '16px',
+                  flex: 1,
+                  overflow: 'hidden',
+                  justifyContent: 'center'
+                }}>
+                  {visibleRooms.map((room) => (
+                    <div 
+                      key={room.id}
+                      style={{
+                        flex: '0 0 240px',
+                        height: '280px',
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                        border: `1px solid ${theme.border}`,
+                        background: theme.bgSidebar
+                      }}
+                    >
+                      <img 
+                        src={room.image} 
+                        alt={room.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      {/* Dark overlay with dynamic text positioning */}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        padding: '16px'
+                      }}>
+                        {/* Title pill */}
+                        <div style={{
+                          alignSelf: 'center',
+                          background: 'rgba(255,255,255,0.92)',
+                          color: '#111',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          textAlign: 'center',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                        }}>
+                          {room.name}
+                        </div>
+
+                        {/* Interactive button */}
+                        <button 
+                          onClick={() => navigate('/room-builder')}
+                          style={{
+                            background: '#111111',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '24px',
+                            padding: '10px 16px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                          }}
+                        >
+                          Try {product.name} in a room ↗
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right navigation arrow */}
+                <button 
+                  onClick={handleNextSlide}
+                  disabled={filteredRooms.length <= 3}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #ddd',
+                    color: filteredRooms.length <= 3 ? '#ccc' : '#111',
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    cursor: filteredRooms.length <= 3 ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    zIndex: 5
+                  }}
+                >
+                  <FiChevronRight size={20} />
+                </button>
+              </div>
+
+              {/* Dots carousel indicators */}
+              <div style={{ display: 'flex', gap: 6, marginTop: '24px' }}>
+                {Array.from({ length: Math.max(1, filteredRooms.length - 2) }, (_, i) => (
+                  <div 
+                    key={i}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: sliderIndex === i ? '#0058a3' : 'rgba(0,0,0,0.15)',
+                      transition: 'background 0.2s'
+                    }}
+                  />
+                ))}
+              </div>
+
             </div>
+          ) : (
+            /* NORMAL 3D CANVAS VIEWPORT */
+            <>
+              {/* Breadcrumbs inside Viewport */}
+              <div style={{ position: 'absolute', top: 20, left: 30, zIndex: 10, fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}>
+                <Link to="/" style={{ color: '#0058a3', textDecoration: 'none', fontWeight: 600 }}>Home</Link>
+                <span style={{ color: '#767676' }}>/</span>
+                <Link to="/products" style={{ color: '#0058a3', textDecoration: 'none', fontWeight: 600 }}>Furniture</Link>
+                <span style={{ color: '#767676' }}>/</span>
+                <span style={{ color: theme.textPrimary, fontWeight: 700 }}>{product.name.toUpperCase()}</span>
+              </div>
+
+              {/* Mode Toggles directly on Viewport */}
+              <div style={{ position: 'absolute', top: 60, left: 30, zIndex: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setMeasurementMode('overall')}
+                  style={{
+                    background: measurementMode === 'overall' ? '#0058a3' : 'rgba(255, 255, 255, 0.85)',
+                    color: measurementMode === 'overall' ? '#ffffff' : '#111111',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📐 Overall Dims
+                </button>
+                <button
+                  onClick={() => setMeasurementMode('detailed')}
+                  style={{
+                    background: measurementMode === 'detailed' ? '#ff7675' : 'rgba(255, 255, 255, 0.85)',
+                    color: measurementMode === 'detailed' ? '#ffffff' : '#111111',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📥 Inside Parts
+                </button>
+                <button
+                  onClick={() => setMeasurementMode('custom')}
+                  style={{
+                    background: measurementMode === 'custom' ? '#00b894' : 'rgba(255, 255, 255, 0.85)',
+                    color: measurementMode === 'custom' ? '#ffffff' : '#111111',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📍 Point Measure
+                </button>
+              </div>
+
+              {/* Custom mode banner */}
+              {measurementMode === 'custom' && (
+                <div style={{
+                  position: 'absolute',
+                  top: 110,
+                  left: 30,
+                  right: 30,
+                  zIndex: 10,
+                  background: 'rgba(0, 184, 148, 0.1)',
+                  border: '1px solid #00b894',
+                  color: '#008a68',
+                  padding: '10px 16px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <span>Select any 2 points on the 3D surface to measure distance.</span>
+                  {customPoints.length > 0 && (
+                    <button 
+                      onClick={clearCustomPoints}
+                      style={{
+                        background: '#00b894',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* UTILITY BAR FOR EXPORTS */}
+              <div style={{ position: 'absolute', bottom: 30, right: 30, zIndex: 10, display: 'flex', gap: 8 }}>
+                <button onClick={handleResetCamera} title="Reset camera zoom" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <FiRotateCcw size={18} />
+                </button>
+                <button onClick={toggleFullscreen} title="Toggle fullscreen" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  {isFullscreen ? <FiMinimize2 size={18} /> : <FiMaximize2 size={18} />}
+                </button>
+                <button onClick={handleScreenshot} title="Save 3D screenshot" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <FiCamera size={18} />
+                </button>
+                <button onClick={handlePDFExport} title="Download Spec PDF" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <FiFileText size={18} />
+                </button>
+              </div>
+
+              {/* THEME TOGGLER (Bottom-left corner, matches user image) */}
+              <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 10 }}>
+                <button 
+                  onClick={() => setIsDarkTheme(!isDarkTheme)} 
+                  title="Toggle design theme mode" 
+                  style={{ 
+                    background: '#ffffff', 
+                    border: '1px solid #ddd', 
+                    color: '#111', 
+                    width: 44, 
+                    height: 44, 
+                    borderRadius: '50%', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)' 
+                  }}
+                >
+                  {isDarkTheme ? <FiSun size={18} /> : <FiMoon size={18} />}
+                </button>
+              </div>
+
+              {/* CANVAS */}
+              <Canvas
+                gl={{ preserveDrawingBuffer: true }}
+                camera={{ position: [0, 1.5, 4], fov: 45 }}
+                style={{ width: '100%', height: '100%', cursor: measurementMode === 'custom' ? 'crosshair' : 'grab' }}
+              >
+                <color attach="background" args={[theme.bgViewport]} />
+                <Environment preset="city" />
+                <ambientLight intensity={0.6} />
+                <directionalLight position={[8, 12, 8]} intensity={1.1} castShadow />
+                
+                <Suspense fallback={
+                  <Html center>
+                    <div style={{ background: '#ffffff', border: '1px solid #ddd', padding: '12px 24px', borderRadius: '30px', fontWeight: 700 }}>
+                      Generating model...
+                    </div>
+                  </Html>
+                }>
+                  <group scale={scale} position={[0, -0.5, 0]}>
+                    <group ref={innerGroupRef} position={modelBounds ? [-modelBounds.center.x, -modelBounds.center.y, -modelBounds.center.z] : [0, 0, 0]}>
+                      
+                      <ProductModel
+                        glbModel={product.glbModel}
+                        selectedColor={selectedColor}
+                        selectedMaterial={selectedMaterial}
+                        setModelBounds={setModelBounds}
+                        measurementMode={measurementMode}
+                        addCustomPoint={addCustomPoint}
+                        innerGroupRef={innerGroupRef}
+                      />
+
+                      {/* Mode 1: Dimension arrows placed exactly along front edges */}
+                      {measurementMode === 'overall' && modelBounds && (
+                        <group>
+                          {/* Width Arrow (Bottom Front Edge) */}
+                          <CADArrow
+                            start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                            end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                            label={getDimensionLabel(detectedDims.width)}
+                            extensionOffset={[0, -0.12, 0.05]}
+                            axis="x"
+                            color="#0058a3"
+                          />
+
+                          {/* Height Arrow (Left Front Edge) */}
+                          <CADArrow
+                            start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                            end={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                            label={getDimensionLabel(detectedDims.height)}
+                            extensionOffset={[-0.12, 0, 0.05]}
+                            axis="y"
+                            color="#0058a3"
+                          />
+
+                          {/* Depth Arrow (Left Top Edge) */}
+                          <CADArrow
+                            start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                            end={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z - modelBounds.size.z / 2]}
+                            label={getDimensionLabel(detectedDims.depth)}
+                            extensionOffset={[-0.12, 0.12, 0]}
+                            axis="z"
+                            color="#0058a3"
+                          />
+                        </group>
+                      )}
+
+                      {/* Mode 2: Shelf, Cushion detailed parts overlays */}
+                      {measurementMode === 'detailed' && (
+                        <DetailedDimensions subComponents={detectedSubComponents} color="#ff7675" />
+                      )}
+
+                      {/* Mode 3: Custom click points */}
+                      {measurementMode === 'custom' && (
+                        <CustomMeasurement points={customPoints} color="#00b894" />
+                      )}
+
+                    </group>
+                  </group>
+
+                  <CameraFitter modelBounds={modelBounds} />
+                  <ContactShadows position={[0, -0.52, 0]} opacity={0.35} scale={6} blur={2.0} far={2.5} />
+                </Suspense>
+
+                <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.05} makeDefault />
+              </Canvas>
+            </>
           )}
 
-          {/* UTILITY BAR FOR EXPORTS */}
-          <div style={{ position: 'absolute', bottom: 30, right: 30, zIndex: 10, display: 'flex', gap: 8 }}>
-            <button onClick={handleResetCamera} title="Reset camera zoom" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              <FiRotateCcw size={18} />
-            </button>
-            <button onClick={toggleFullscreen} title="Toggle fullscreen" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              {isFullscreen ? <FiMinimize2 size={18} /> : <FiMaximize2 size={18} />}
-            </button>
-            <button onClick={handleScreenshot} title="Save 3D screenshot" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              <FiCamera size={18} />
-            </button>
-            <button onClick={handlePDFExport} title="Download Spec PDF" style={{ background: '#ffffff', border: '1px solid #ddd', color: '#111', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-              <FiFileText size={18} />
-            </button>
-          </div>
-
-          {/* THEME TOGGLER (Bottom-left corner, matches user image) */}
-          <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 10 }}>
-            <button 
-              onClick={() => setIsDarkTheme(!isDarkTheme)} 
-              title="Toggle design theme mode" 
-              style={{ 
-                background: '#ffffff', 
-                border: '1px solid #ddd', 
-                color: '#111', 
-                width: 44, 
-                height: 44, 
-                borderRadius: '50%', 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)' 
-              }}
-            >
-              {isDarkTheme ? <FiSun size={18} /> : <FiMoon size={18} />}
-            </button>
-          </div>
-
-          {/* CANVAS */}
-          <Canvas
-            gl={{ preserveDrawingBuffer: true }}
-            camera={{ position: [0, 1.5, 4], fov: 45 }}
-            style={{ width: '100%', height: '100%', cursor: measurementMode === 'custom' ? 'crosshair' : 'grab' }}
-          >
-            <color attach="background" args={[theme.bgViewport]} />
-            <Environment preset="city" />
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[8, 12, 8]} intensity={1.1} castShadow />
-            
-            <Suspense fallback={
-              <Html center>
-                <div style={{ background: '#ffffff', border: '1px solid #ddd', padding: '12px 24px', borderRadius: '30px', fontWeight: 700 }}>
-                  Generating model...
-                </div>
-              </Html>
-            }>
-              <group scale={scale} position={[0, -0.5, 0]}>
-                <group ref={innerGroupRef} position={modelBounds ? [-modelBounds.center.x, -modelBounds.center.y, -modelBounds.center.z] : [0, 0, 0]}>
-                  
-                  <ProductModel
-                    glbModel={product.glbModel}
-                    selectedColor={selectedColor}
-                    selectedMaterial={selectedMaterial}
-                    setModelBounds={setModelBounds}
-                    measurementMode={measurementMode}
-                    addCustomPoint={addCustomPoint}
-                    innerGroupRef={innerGroupRef}
-                  />
-
-                  {/* Mode 1: Dimension arrows placed exactly along front edges */}
-                  {measurementMode === 'overall' && modelBounds && (
-                    <group>
-                      {/* Width Arrow (Bottom Front Edge) */}
-                      <CADArrow
-                        start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        label={getDimensionLabel(detectedDims.width)}
-                        extensionOffset={[0, -0.12, 0.05]}
-                        axis="x"
-                        color="#0058a3"
-                      />
-
-                      {/* Height Arrow (Left Front Edge) */}
-                      <CADArrow
-                        start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        end={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        label={getDimensionLabel(detectedDims.height)}
-                        extensionOffset={[-0.12, 0, 0.05]}
-                        axis="y"
-                        color="#0058a3"
-                      />
-
-                      {/* Depth Arrow (Left Top Edge) */}
-                      <CADArrow
-                        start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        end={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z - modelBounds.size.z / 2]}
-                        label={getDimensionLabel(detectedDims.depth)}
-                        extensionOffset={[-0.12, 0.12, 0]}
-                        axis="z"
-                        color="#0058a3"
-                      />
-                    </group>
-                  )}
-
-                  {/* Mode 2: Shelf, Cushion detailed parts overlays */}
-                  {measurementMode === 'detailed' && (
-                    <DetailedDimensions subComponents={detectedSubComponents} color="#ff7675" />
-                  )}
-
-                  {/* Mode 3: Custom click points */}
-                  {measurementMode === 'custom' && (
-                    <CustomMeasurement points={customPoints} color="#00b894" />
-                  )}
-
-                </group>
-              </group>
-
-              <CameraFitter modelBounds={modelBounds} />
-              <ContactShadows position={[0, -0.52, 0]} opacity={0.35} scale={6} blur={2.0} far={2.5} />
-            </Suspense>
-
-            <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.05} makeDefault />
-          </Canvas>
         </div>
 
         {/* RIGHT COLUMN: IKEA Product Configuration Panel */}
@@ -1134,14 +1440,16 @@ export default function ProductDetail() {
               <Accordion 
                 title="Preview in AR" 
                 isOpen={activeAccordion === 'ar'} 
-                onToggle={() => setActiveAccordion(activeAccordion === 'ar' ? '' : 'ar')}
+                onToggle={() => {
+                  setActiveAccordion(activeAccordion === 'ar' ? '' : 'ar');
+                  setSliderIndex(0);
+                }}
                 isDarkTheme={isDarkTheme}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>Scan this QR code to view in your home or open it directly in WebXR mode.</div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ background: '#fff', padding: 8, borderRadius: 8, border: '1px solid #ddd' }}>
-                      {/* Simple QR Code placeholder */}
                       <div style={{ width: 80, height: 80, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px' }}>
                         QR CODE
                       </div>
@@ -1156,7 +1464,10 @@ export default function ProductDetail() {
               <Accordion 
                 title={`Design it yourself`} 
                 isOpen={activeAccordion === 'design'} 
-                onToggle={() => setActiveAccordion(activeAccordion === 'design' ? '' : 'design')}
+                onToggle={() => {
+                  setActiveAccordion(activeAccordion === 'design' ? '' : 'design');
+                  setSliderIndex(0);
+                }}
                 isDarkTheme={isDarkTheme}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1167,17 +1478,50 @@ export default function ProductDetail() {
                 </div>
               </Accordion>
 
+              {/* ACCORDION: Try BESTÅ in a room */}
               <Accordion 
                 title={`Try ${product.name} in a room`} 
                 isOpen={activeAccordion === 'tryroom'} 
-                onToggle={() => setActiveAccordion(activeAccordion === 'tryroom' ? '' : 'tryroom')}
+                onToggle={() => {
+                  setActiveAccordion(activeAccordion === 'tryroom' ? '' : 'tryroom');
+                  setSliderIndex(0);
+                }}
                 isDarkTheme={isDarkTheme}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div>Get inspiration from our interactive virtual showrooms, test placement coordinates, and plans.</div>
-                  <Link to="/scenes" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#0058a3', fontWeight: 'bold', textDecoration: 'none' }}>
-                    Browse Saved Rooms <FiExternalLink />
-                  </Link>
+                  <div>Get ideas in showrooms, design your space, and plan a room in 3D.</div>
+                  
+                  {/* Category Filter Pills (Matches user image exactly) */}
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                    {['Bedroom', 'Dining Room', 'Generic', 'Living Room', 'Office'].map((cat) => {
+                      const isSelected = selectedRoomFilter === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => {
+                            setSelectedRoomFilter(cat);
+                            setSliderIndex(0); // reset slider index on filter change
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            backgroundColor: isSelected ? '#ffffff' : (isDarkTheme ? 'rgba(255,255,255,0.03)' : '#ffffff'),
+                            color: isSelected ? '#111111' : (isDarkTheme ? 'var(--text-secondary)' : '#484848'),
+                            border: isSelected 
+                              ? '2px solid #0058a3' 
+                              : `1px solid ${isDarkTheme ? 'var(--border-subtle)' : '#ccc'}`,
+                            boxShadow: isSelected ? '0 0 0 1px #0058a3' : 'none',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </Accordion>
             </div>
