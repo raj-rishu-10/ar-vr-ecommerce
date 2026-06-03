@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useRoomStore } from '../../stores/useRoomStore';
 import { useCameraStore } from '../../stores/useCameraStore';
@@ -36,6 +36,7 @@ const WALL_COLORS = [
 
 export default function RoomDesignerLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const presetData = location.state;
   const { setDimensions, wallMaterial, setWallMaterial } = useRoomStore();
   const { activeView, setView } = useCameraStore();
@@ -180,7 +181,7 @@ export default function RoomDesignerLayout() {
 
   useEffect(() => {
     if (!currentProjectId) return;
-    const project = projects.find(p => p.id === currentProjectId);
+    const project = useProjectStore.getState().projects.find(p => p.id === currentProjectId);
     if (project) {
       if (project.roomData) {
         useRoomStore.setState({ 
@@ -193,7 +194,7 @@ export default function RoomDesignerLayout() {
         useFurnitureStore.setState({ placedItems: project.sceneData });
       }
     }
-  }, [currentProjectId, projects]);
+  }, [currentProjectId]);
 
   // Auto-save when room or furniture changes
   useEffect(() => {
@@ -247,10 +248,15 @@ export default function RoomDesignerLayout() {
 
         {/* Center-Left */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, paddingLeft: 20 }}>
-          <button style={{ border: 'none', background: '#f3f4f6', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#111' }}>
+          <button 
+            onClick={() => navigate(-1)}
+            style={{ border: 'none', background: '#f3f4f6', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#111' }}
+          >
             <FiChevronLeft size={18} />
           </button>
-          <span style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>Untitled Design</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>
+            {projects.find(p => p.id === currentProjectId)?.name || 'Untitled Design'}
+          </span>
         </div>
 
         {/* Right Side */}
