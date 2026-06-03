@@ -3,24 +3,51 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Box, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { 
+  FiMaximize2, 
+  FiMinimize2, 
+  FiCamera, 
+  FiFileText, 
+  FiRotateCcw, 
+  FiShoppingCart, 
+  FiHeart, 
+  FiCheck, 
+  FiLayers, 
+  FiCompass, 
+  FiTruck, 
+  FiShield, 
+  FiActivity,
+  FiHelpCircle
+} from 'react-icons/fi';
 import useProductStore from '../store/productStore';
 import useCartStore from '../store/cartStore';
 import useSceneStore from '../store/sceneStore';
 import useProductDetailStore from '../store/productDetailStore';
 
-// Configuration presets
-const CONFIG_COLORS = [
-  { name: 'White', hex: '#FFFFFF' },
-  { name: 'Black', hex: '#111111' },
-  { name: 'Oak', hex: '#D4A574' },
-  { name: 'Walnut', hex: '#5C4033' },
-  { name: 'Grey', hex: '#B2BEC3' }
-];
-
+// Configuration presets for materials
 const CONFIG_MATERIALS = ['Wood', 'Metal', 'Glass', 'Plastic'];
 
-/* ─── CAD Dimension Arrow Component ────────────────────────── */
-function CADArrow({ start, end, label, color = '#0058a3', extensionOffset = [0, 0, 0], axis = 'x' }) {
+// Helper to map color hex codes to human-readable names
+const getColorName = (hex) => {
+  const map = {
+    '#2D3436': 'Charcoal Black',
+    '#636E72': 'Steel Grey',
+    '#DFE6E9': 'Classic White',
+    '#B2BEC3': 'Slate Grey',
+    '#00B894': 'Emerald Teal',
+    '#6C5CE7': 'Aura Purple',
+    '#FDCB6E': 'Warm Amber',
+    '#D4A574': 'Natural Wood',
+    '#5C4033': 'Dark Walnut',
+    '#ffffff': 'Pure White',
+    '#FFFFFF': 'Pure White',
+    '#111111': 'Midnight Black'
+  };
+  return map[hex] || 'Custom Finish';
+};
+
+/* ─── CAD Dimension Arrow Component (Holographic Glass style) ─── */
+function CADArrow({ start, end, label, color = 'var(--accent)', extensionOffset = [0, 0, 0], axis = 'x' }) {
   const points = useMemo(() => [
     new THREE.Vector3(...start),
     new THREE.Vector3(...end)
@@ -35,7 +62,6 @@ function CADArrow({ start, end, label, color = '#0058a3', extensionOffset = [0, 
     return new THREE.Vector3().addVectors(mainStart, mainEnd).multiplyScalar(0.5);
   }, [mainStart, mainEnd]);
 
-  // Rotations for the arrow head cones to point in the correct directions
   const coneRotations = useMemo(() => {
     if (axis === 'x') {
       return { r1: [0, 0, -Math.PI / 2], r2: [0, 0, Math.PI / 2] };
@@ -59,7 +85,7 @@ function CADArrow({ start, end, label, color = '#0058a3', extensionOffset = [0, 
             ]), 3]}
           />
         </bufferGeometry>
-        <lineBasicMaterial attach="material" color="#a5b1c2" linewidth={1} />
+        <lineBasicMaterial attach="material" color="rgba(255,255,255,0.25)" linewidth={1} />
       </line>
 
       {/* Extension Line 2 */}
@@ -73,7 +99,7 @@ function CADArrow({ start, end, label, color = '#0058a3', extensionOffset = [0, 
             ]), 3]}
           />
         </bufferGeometry>
-        <lineBasicMaterial attach="material" color="#a5b1c2" linewidth={1} />
+        <lineBasicMaterial attach="material" color="rgba(255,255,255,0.25)" linewidth={1} />
       </line>
 
       {/* Main Dimension Line */}
@@ -102,22 +128,9 @@ function CADArrow({ start, end, label, color = '#0058a3', extensionOffset = [0, 
         <meshBasicMaterial color={color} />
       </mesh>
 
-      {/* Float Label */}
+      {/* Holographic Float Label */}
       <Html position={midPoint} center distanceFactor={6}>
-        <div style={{
-          background: '#ffffff',
-          border: `2px solid ${color}`,
-          color: color,
-          padding: '4px 10px',
-          borderRadius: '20px',
-          fontSize: '11px',
-          fontWeight: '800',
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          fontFamily: "'Inter', sans-serif"
-        }}>
+        <div className="holographic-badge" style={{ border: `2px solid ${color}` }}>
           {label}
         </div>
       </Html>
@@ -137,23 +150,12 @@ function DetailedDimensions({ subComponents, color = '#ff7675' }) {
           <group key={idx}>
             {/* Transparent bounding box overlay */}
             <Box args={[size.width / 100, size.height / 100, size.depth / 100]} position={[center.x, center.y, center.z]}>
-              <meshBasicMaterial wireframe color={color} transparent opacity={0.4} />
+              <meshBasicMaterial wireframe color={color} transparent opacity={0.35} />
             </Box>
             
-            {/* Rounded Label */}
+            {/* Holographic Label */}
             <Html position={[center.x, center.y + size.height / 200 + 0.03, center.z]} center distanceFactor={6}>
-              <div style={{
-                background: '#ffffff',
-                border: `2px solid ${color}`,
-                color: color,
-                padding: '3px 8px',
-                borderRadius: '8px',
-                fontSize: '10px',
-                fontWeight: '700',
-                whiteSpace: 'nowrap',
-                boxShadow: '0 3px 8px rgba(0,0,0,0.1)',
-                fontFamily: "'Inter', sans-serif"
-              }}>
+              <div className="holographic-badge" style={{ border: `2px solid ${color}`, fontSize: '10px', padding: '3px 8px', borderRadius: '8px' }}>
                 {comp.type} ({name}): {size.width}×{size.height}×{size.depth} cm
               </div>
             </Html>
@@ -165,7 +167,7 @@ function DetailedDimensions({ subComponents, color = '#ff7675' }) {
 }
 
 /* ─── Custom Measurement Tool Overlay Component ─────────────── */
-function CustomMeasurement({ points, color = '#2ed573' }) {
+function CustomMeasurement({ points, color = '#00b894' }) {
   if (!points || points.length === 0) return null;
 
   const p1 = points[0];
@@ -208,18 +210,7 @@ function CustomMeasurement({ points, color = '#2ed573' }) {
       </line>
 
       <Html position={midPoint} center distanceFactor={6}>
-        <div style={{
-          background: '#ffffff',
-          border: `2px solid ${color}`,
-          color: color,
-          padding: '4px 8px',
-          borderRadius: '20px',
-          fontSize: '11px',
-          fontWeight: '800',
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          fontFamily: "'Inter', sans-serif"
-        }}>
+        <div className="holographic-badge" style={{ border: `2px solid ${color}` }}>
           {distanceCm} cm
         </div>
       </Html>
@@ -235,16 +226,12 @@ function CameraFitter({ modelBounds }) {
     if (!modelBounds) return;
     const { size, center } = modelBounds;
 
-    // Normalize scale math
     const maxDim = Math.max(size.x, size.y, size.z);
     const scale = 2 / maxDim;
-
-    // Calculate bounding sphere of the normalized group
     const radius = (maxDim / 2) * scale;
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(radius / Math.sin(fov / 2));
     
-    // Offset slightly for comfortable viewing angle
     cameraZ *= 1.5;
 
     camera.position.set(cameraZ * 0.8, cameraZ * 0.6, cameraZ * 1.2);
@@ -271,7 +258,6 @@ function ProductModel({
 }) {
   const { scene } = useGLTF(glbModel);
 
-  // Extract bounding box sizes on load
   useEffect(() => {
     if (!scene) return;
     const box = new THREE.Box3().setFromObject(scene);
@@ -280,17 +266,13 @@ function ProductModel({
     setModelBounds({ box, size, center });
   }, [scene, setModelBounds, glbModel]);
 
-  // Handle material override for Configurator
   useEffect(() => {
     if (!scene) return;
     scene.traverse((child) => {
       if (child.isMesh) {
         child.material = child.material.clone();
-        
-        // Dynamic color
         child.material.color.set(selectedColor);
         
-        // Dynamic material specifiers
         if (selectedMaterial === 'Metal') {
           child.material.metalness = 0.85;
           child.material.roughness = 0.15;
@@ -334,12 +316,22 @@ function ProductModel({
   );
 }
 
-/* ─── Stars ────────────────────────────────────────────────── */
+/* ─── Stars Rendering Helper ───────────────────────────────── */
 function Stars({ rating }) {
   return (
-    <span style={{ color: '#e8a400', fontSize: 16, letterSpacing: 1 }}>
-      {Array.from({ length: 5 }, (_, i) => i < Math.floor(rating) ? '★' : '☆')}
-    </span>
+    <div style={{ display: 'flex', gap: 2 }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span 
+          key={i} 
+          style={{ 
+            color: i < Math.floor(rating) ? 'var(--warning)' : 'var(--text-muted)', 
+            fontSize: 16 
+          }}
+        >
+          ★
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -363,7 +355,7 @@ export default function ProductDetail() {
   const clearCustomPoints = useProductDetailStore(s => s.clearCustomPoints);
   const resetStore = useProductDetailStore(s => s.resetStore);
 
-  // Local state
+  // Local UI states
   const [modelBounds, setModelBounds] = useState(null);
   const [addedToCart, setAddedToCart] = useState(false);
   const [wished, setWished] = useState(false);
@@ -377,17 +369,18 @@ export default function ProductDetail() {
   useEffect(() => {
     resetStore();
     if (product) {
-      // Set default color
       setSelectedColor(product.colors?.[0] || '#2D3436');
     }
   }, [product, resetStore, setSelectedColor]);
 
   if (!product) {
     return (
-      <div style={{ padding: '80px 40px', textAlign: 'center', fontFamily: 'system-ui' }}>
-        <div style={{ fontSize: 48 }}>🔍</div>
-        <h3 style={{ marginTop: 16 }}>Product not found</h3>
-        <Link to="/products" style={{ color: '#0058a3', fontSize: 14 }}>← Browse products</Link>
+      <div style={{ padding: '120px 24px', textAlign: 'center', background: 'var(--bg-primary)', minHeight: '100vh' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+        <h3 style={{ color: 'var(--text-primary)', marginBottom: 12 }}>Product Not Found</h3>
+        <Link to="/products" style={{ color: 'var(--accent-light)', fontSize: 14, textDecoration: 'none' }}>
+          ← Back to Collections
+        </Link>
       </div>
     );
   }
@@ -401,8 +394,7 @@ export default function ProductDetail() {
 
   const groupPosition = useMemo(() => {
     if (!modelBounds) return [0, 0, 0];
-    const { center, size } = modelBounds;
-    // Align model base exactly to y = -0.5
+    const { center } = modelBounds;
     return [
       -center.x * scale,
       -center.y * scale - 0.5,
@@ -410,11 +402,10 @@ export default function ProductDetail() {
     ];
   }, [modelBounds, scale]);
 
-  // Detected overall dimensions
+  // Calculated overall dimensions
   const detectedDims = useMemo(() => {
     if (!modelBounds) return { width: 0, height: 0, depth: 0 };
     const { size } = modelBounds;
-    // Scale multiplier: assume meters if size is small
     const multiplier = Math.max(size.x, size.y, size.z) < 10 ? 100 : 1;
     return {
       width: Math.round(size.x * multiplier),
@@ -427,54 +418,53 @@ export default function ProductDetail() {
   const detectedSubComponents = useMemo(() => {
     if (!modelBounds) return [];
     
-    // We mock/generate high-fidelity shelves and drawers to match IKEA specification detail level
     const list = [];
     const { width: w, height: h, depth: d } = detectedDims;
 
     if (product.category === 'tables') {
       list.push({
-        name: 'Main Tabletop',
+        name: 'Upper Worktop',
         type: 'Surface',
-        size: { width: w, height: Math.round(h * 0.1), depth: d },
-        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y + modelBounds.size.y * 0.4, modelBounds.center.z)
+        size: { width: w, height: Math.round(h * 0.08), depth: d },
+        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y + modelBounds.size.y * 0.42, modelBounds.center.z)
       });
       list.push({
         name: 'Lower Storage Rack',
         type: 'Shelf',
-        size: { width: Math.round(w * 0.85), height: 4, depth: Math.round(d * 0.8) },
-        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y - modelBounds.size.y * 0.15, modelBounds.center.z)
+        size: { width: Math.round(w * 0.86), height: 3, depth: Math.round(d * 0.8) },
+        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y - modelBounds.size.y * 0.18, modelBounds.center.z)
       });
     } else if (product.category === 'storage' || product.category === 'sofas') {
       list.push({
-        name: 'Top Display Compartment',
+        name: 'Internal Shelf Unit',
         type: 'Shelf',
-        size: { width: Math.round(w * 0.9), height: 5, depth: Math.round(d * 0.85) },
-        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y + modelBounds.size.y * 0.2, modelBounds.center.z)
+        size: { width: Math.round(w * 0.88), height: 4, depth: Math.round(d * 0.8) },
+        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y + modelBounds.size.y * 0.15, modelBounds.center.z)
       });
       list.push({
-        name: 'Bottom Drawer Pull',
+        name: 'Base Drawer Unit',
         type: 'Drawer',
-        size: { width: Math.round(w * 0.42), height: Math.round(h * 0.3), depth: Math.round(d * 0.8) },
-        center: new THREE.Vector3(modelBounds.center.x - modelBounds.size.x * 0.22, modelBounds.center.y - modelBounds.size.y * 0.25, modelBounds.center.z)
+        size: { width: Math.round(w * 0.44), height: Math.round(h * 0.28), depth: Math.round(d * 0.85) },
+        center: new THREE.Vector3(modelBounds.center.x - modelBounds.size.x * 0.2, modelBounds.center.y - modelBounds.size.y * 0.26, modelBounds.center.z)
       });
     } else if (product.category === 'chairs') {
       list.push({
-        name: 'Soft Seat Cushion',
+        name: 'Seat Board',
         type: 'Seat',
-        size: { width: Math.round(w * 0.9), height: Math.round(h * 0.15), depth: Math.round(d * 0.85) },
-        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y - modelBounds.size.y * 0.08, modelBounds.center.z)
+        size: { width: Math.round(w * 0.9), height: Math.round(h * 0.12), depth: Math.round(d * 0.88) },
+        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y - modelBounds.size.y * 0.05, modelBounds.center.z)
       });
       list.push({
-        name: 'Backrest Support Panel',
+        name: 'Back Support',
         type: 'Support',
-        size: { width: Math.round(w * 0.85), height: Math.round(h * 0.45), depth: Math.round(d * 0.08) },
-        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y + modelBounds.size.y * 0.25, modelBounds.center.z - modelBounds.size.z * 0.25)
+        size: { width: Math.round(w * 0.82), height: Math.round(h * 0.42), depth: Math.round(d * 0.08) },
+        center: new THREE.Vector3(modelBounds.center.x, modelBounds.center.y + modelBounds.size.y * 0.28, modelBounds.center.z - modelBounds.size.z * 0.22)
       });
     } else {
       list.push({
-        name: 'Main Section',
+        name: 'Main Space',
         type: 'Compartment',
-        size: { width: Math.round(w * 0.95), height: Math.round(h * 0.8), depth: Math.round(d * 0.95) },
+        size: { width: Math.round(w * 0.9), height: Math.round(h * 0.75), depth: Math.round(d * 0.9) },
         center: modelBounds.center.clone()
       });
     }
@@ -540,542 +530,730 @@ export default function ProductDetail() {
 
     const doc = new jsPDF();
     
-    // Header Banner
-    doc.setFillColor(0, 88, 163); // IKEA Blue
-    doc.rect(0, 0, 210, 38, 'F');
+    // Spec Sheet Header
+    doc.setFillColor(18, 18, 26); // Aura Dark Purple-Gray
+    doc.rect(0, 0, 210, 42, 'F');
     
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(162, 155, 254); // Aura accent-light
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
-    doc.text('IKEA 3D Viewer Product Specifications', 15, 24);
+    doc.text('AURA Interactive Spec Sheet', 15, 24);
     
-    // Date & Source
-    doc.setTextColor(220, 220, 220);
+    doc.setTextColor(136, 136, 160);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Generated on: ${new Date().toLocaleDateString()} | Site: ar-vr-red.vercel.app`, 15, 32);
+    doc.text(`Generated: ${new Date().toLocaleDateString()} | Model: ${product.name}`, 15, 33);
     
-    // Product Title
+    // Product details
     doc.setTextColor(17, 17, 17);
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(product.name, 15, 52);
+    doc.text(product.name, 15, 56);
     
-    // Category & Price
     doc.setFontSize(11);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Category: ${product.category.toUpperCase()}`, 15, 60);
-    doc.setTextColor(17, 17, 17);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Price: Rs. ${Math.round(product.price * 83).toLocaleString('en-IN')}`, 15, 67);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Collection category: ${product.category.toUpperCase()}`, 15, 64);
     
-    // Description
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Price Tag: Rs. ${Math.round(product.price * 83).toLocaleString('en-IN')}`, 15, 71);
+    
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
-    doc.text(product.description || '', 15, 75, { maxWidth: 180 });
+    doc.text(product.description || '', 15, 79, { maxWidth: 180 });
     
-    // Divider line
     doc.setDrawColor(220, 220, 220);
-    doc.line(15, 87, 195, 87);
+    doc.line(15, 91, 195, 91);
     
-    // Config Details Table Layout
+    // Spec Table
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
-    doc.setTextColor(0, 88, 163);
-    doc.text('Product Configuration & Dimensions', 15, 96);
+    doc.setTextColor(108, 92, 231); // Aura Accent Purple
+    doc.text('Configuration Details & Model Bounds', 15, 100);
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10.5);
     doc.setTextColor(50, 50, 50);
-    doc.text(`Selected Material: ${selectedMaterial}`, 15, 105);
-    doc.text(`Selected Color Hex: ${selectedColor}`, 15, 112);
-    doc.text(`Calculated Width: ${detectedDims.width} cm`, 15, 119);
-    doc.text(`Calculated Height: ${detectedDims.height} cm`, 15, 126);
-    doc.text(`Calculated Depth: ${detectedDims.depth} cm`, 15, 133);
+    doc.text(`Finish Material: ${selectedMaterial}`, 15, 110);
+    doc.text(`Color Code (Hex): ${selectedColor} (${getColorName(selectedColor)})`, 15, 117);
+    doc.text(`Calculated Width: ${detectedDims.width} cm`, 15, 124);
+    doc.text(`Calculated Height: ${detectedDims.height} cm`, 15, 131);
+    doc.text(`Calculated Depth: ${detectedDims.depth} cm`, 15, 138);
     
-    // Add Subcomponents specifications
     if (detectedSubComponents.length > 0) {
       doc.setFont('helvetica', 'bold');
-      doc.text('Detected Subcomponents:', 105, 105);
+      doc.text('Key Subcomponents:', 110, 110);
       doc.setFont('helvetica', 'normal');
       detectedSubComponents.forEach((comp, idx) => {
-        doc.text(`• ${comp.type} (${comp.name}): ${comp.size.width}×${comp.size.height}×${comp.size.depth} cm`, 105, 112 + (idx * 7));
+        doc.text(`• ${comp.type}: ${comp.size.width}×${comp.size.height}×${comp.size.depth} cm`, 110, 117 + (idx * 7));
       });
     }
 
-    // 3D Rendering Screenshot
+    // Capture Viewport Rendering
     if (imgData) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
-      doc.setTextColor(0, 88, 163);
-      doc.text('3D Interactive Model Preview:', 15, 150);
+      doc.setTextColor(108, 92, 231);
+      doc.text('Interactive 3D Viewport Capture:', 15, 155);
       
-      // Draw image border
-      doc.setDrawColor(180, 180, 180);
-      doc.rect(15, 155, 140, 95);
-      doc.addImage(imgData, 'PNG', 16, 156, 138, 93);
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(15, 160, 140, 95);
+      doc.addImage(imgData, 'PNG', 16, 161, 138, 93);
     }
     
-    // Footer line
+    // Footer
     doc.setDrawColor(220, 220, 220);
     doc.line(15, 270, 195, 270);
     
     doc.setFontSize(9);
     doc.setTextColor(140, 140, 140);
     doc.text('This specification page is generated dynamically from the live 3D web configurator.', 15, 278);
-    doc.text('For the best immersive experience, open the model in mobile AR.', 15, 283);
+    doc.text('To place this model in your space, scan the product with a WebXR-compatible mobile browser.', 15, 283);
     
     doc.save(`${product.name.replace(/\s+/g, '_')}_Spec_Sheet.pdf`);
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', color: 'var(--text-primary)' }}>
       
+      {/* Dynamic styles to handle page layouts cleanly */}
+      <style>{`
+        .product-detail-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 32px;
+          margin-bottom: 40px;
+        }
+        @media (max-width: 992px) {
+          .product-detail-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+        }
+        .config-color-btn {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+        .config-color-btn:hover {
+          transform: scale(1.15);
+        }
+        .config-material-btn {
+          padding: 12px 16px;
+          background: rgba(255, 255, 255, 0.03);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-subtle);
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: center;
+        }
+        .config-material-btn:hover {
+          background: rgba(255, 255, 255, 0.07);
+          color: var(--text-primary);
+          border-color: var(--text-muted);
+        }
+        .config-material-btn.active {
+          background: var(--gradient-primary);
+          color: white;
+          border: none;
+          box-shadow: var(--shadow-glow);
+        }
+        .action-btn-primary {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 16px 24px;
+          background: var(--gradient-primary);
+          color: white;
+          border: none;
+          border-radius: 30px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: var(--shadow-glow);
+        }
+        .action-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(108, 92, 231, 0.4);
+        }
+        .action-btn-secondary {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 14px 24px;
+          background: var(--gradient-accent);
+          color: white;
+          border: none;
+          border-radius: 30px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .action-btn-secondary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 184, 148, 0.3);
+        }
+        .action-btn-outline {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 14px 24px;
+          background: transparent;
+          color: var(--accent-light);
+          border: 1.5px solid var(--border-accent);
+          border-radius: 30px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .action-btn-outline:hover {
+          background: rgba(108, 92, 231, 0.08);
+          color: white;
+          border-color: var(--accent);
+          transform: translateY(-2px);
+        }
+        .holographic-badge {
+          background: rgba(10, 10, 15, 0.85);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+          user-select: none;
+          font-family: var(--font-primary);
+          color: var(--text-primary);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          transition: all 0.2s ease-in-out;
+        }
+      `}</style>
+
       {/* ── Breadcrumb Bar ── */}
-      <div style={{ padding: '16px 40px', fontSize: 13, color: '#767676', borderBottom: '1px solid #e5e5e5', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <Link to="/" style={{ color: '#0058a3', textDecoration: 'none', fontWeight: 600 }}>Home</Link>
-        <span>/</span>
-        <Link to="/products" style={{ color: '#0058a3', textDecoration: 'none', fontWeight: 600 }}>Furniture</Link>
-        <span>/</span>
-        <span style={{ color: '#111111', textTransform: 'uppercase', fontWeight: 800 }}>{product.name}</span>
+      <div style={{ maxWidth: 1320, margin: '0 auto', padding: '24px 24px 0 24px' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Link to="/" style={{ color: 'var(--accent-light)', textDecoration: 'none', fontWeight: 500 }}>Home</Link>
+          <span>/</span>
+          <Link to="/products" style={{ color: 'var(--accent-light)', textDecoration: 'none', fontWeight: 500 }}>Collection</Link>
+          <span>/</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{product.name}</span>
+        </div>
       </div>
 
-      {/* ── Main Product Canvas + Configurations Layout ── */}
-      <div className="product-layout-container" style={{ display: 'flex', flexWrap: 'wrap', flex: 1, position: 'relative' }}>
-        
-        {/* LEFT: 3D Interactive Canvas Box */}
-        <div className="product-layout-left" ref={viewerContainerRef} style={{
-          flex: '1 1 60%',
-          minWidth: 320,
-          background: 'radial-gradient(circle at center, #ffffff 0%, #f6f6f2 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          height: isFullscreen ? '100vh' : '75vh',
-          minHeight: 500,
-          transition: 'all 0.3s'
-        }}>
+      {/* ── Main Layout Grid ── */}
+      <div style={{ maxWidth: 1320, margin: '0 auto', padding: '24px' }}>
+        <div className="product-detail-grid">
           
-          {/* Overlay CAD Measurement Modes & Tools */}
-          <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setMeasurementMode('overall')}
-              style={{
-                background: measurementMode === 'overall' ? '#0058a3' : 'rgba(255,255,255,0.9)',
-                color: measurementMode === 'overall' ? '#ffffff' : '#111111',
-                border: '1px solid rgba(0,0,0,0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                transition: 'all 0.2s'
-              }}
-            >
-              📐 Overall Dims
-            </button>
-            <button
-              onClick={() => setMeasurementMode('detailed')}
-              style={{
-                background: measurementMode === 'detailed' ? '#ff7675' : 'rgba(255,255,255,0.9)',
-                color: measurementMode === 'detailed' ? '#ffffff' : '#111111',
-                border: '1px solid rgba(0,0,0,0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                transition: 'all 0.2s'
-              }}
-            >
-              📥 Detailed Parts
-            </button>
-            <button
-              onClick={() => setMeasurementMode('custom')}
-              style={{
-                background: measurementMode === 'custom' ? '#2ed573' : 'rgba(255,255,255,0.9)',
-                color: measurementMode === 'custom' ? '#ffffff' : '#111111',
-                border: '1px solid rgba(0,0,0,0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                transition: 'all 0.2s'
-              }}
-            >
-              📍 Custom Measure
-            </button>
-          </div>
-
-          {/* Helper alert text for Custom mode */}
-          {measurementMode === 'custom' && (
+          {/* LEFT: 3D Viewport Box */}
+          <div ref={viewerContainerRef} style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            overflow: 'hidden',
+            position: 'relative',
+            height: isFullscreen ? '100vh' : '65vh',
+            minHeight: 480,
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: 'var(--shadow-md)',
+            transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            
+            {/* 3D Scene Background Gradient layer */}
             <div style={{
               position: 'absolute',
-              top: 70,
-              left: 20,
-              zIndex: 10,
-              background: 'rgba(46, 213, 115, 0.1)',
-              border: '1px solid #2ed573',
-              color: '#26af5c',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '11px',
-              fontWeight: '600'
-            }}>
-              💡 Click any 2 points on the model surface to measure distance.
-              {customPoints.length > 0 && (
-                <button 
-                  onClick={clearCustomPoints}
-                  style={{
-                    marginLeft: '8px',
-                    background: '#2ed573',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '2px 6px',
-                    fontSize: '10px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Reset Points
-                </button>
-              )}
-            </div>
-          )}
+              inset: 0,
+              background: 'radial-gradient(circle at center, rgba(108, 92, 231, 0.05) 0%, rgba(10, 10, 15, 0) 70%)',
+              pointerEvents: 'none'
+            }} />
 
-          {/* Interactive Utility Controls */}
-          <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 10, display: 'flex', gap: 8 }}>
-            <button onClick={handleResetCamera} title="Reset Camera" style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.1)', padding: '10px', borderRadius: '50%', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              🔄
-            </button>
-            <button onClick={toggleFullscreen} title="Toggle Fullscreen" style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.1)', padding: '10px', borderRadius: '50%', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {isFullscreen ? '📴' : '📺'}
-            </button>
-            <button onClick={handleScreenshot} title="Capture Screenshot" style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.1)', padding: '10px', borderRadius: '50%', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              📸
-            </button>
-            <button onClick={handlePDFExport} title="Export PDF Specification" style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.1)', padding: '10px', borderRadius: '50%', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              📄
-            </button>
-          </div>
-
-          {/* 3D Canvas */}
-          <Canvas
-            gl={{ preserveDrawingBuffer: true }}
-            camera={{ position: [0, 1.5, 4], fov: 45 }}
-            style={{ width: '100%', height: '100%', cursor: measurementMode === 'custom' ? 'crosshair' : 'grab' }}
-          >
-            <Environment preset="city" />
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[10, 15, 10]} intensity={1.2} castShadow />
-            
-            <Suspense fallback={
-              <Html center>
-                <div style={{ background: '#fff', padding: '12px 24px', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', fontWeight: 'bold' }}>
-                  Loading 3D Model...
-                </div>
-              </Html>
-            }>
-              <group scale={scale} position={[0, -0.5, 0]}>
-                <group ref={innerGroupRef} position={modelBounds ? [-modelBounds.center.x, -modelBounds.center.y, -modelBounds.center.z] : [0, 0, 0]}>
-                  
-                  {/* Load the actual GLB model */}
-                  <ProductModel
-                    glbModel={product.glbModel}
-                    selectedColor={selectedColor}
-                    selectedMaterial={selectedMaterial}
-                    setModelBounds={setModelBounds}
-                    measurementMode={measurementMode}
-                    addCustomPoint={addCustomPoint}
-                    innerGroupRef={innerGroupRef}
-                  />
-
-                  {/* Mode 1: Overall Dimensions Overlay */}
-                  {measurementMode === 'overall' && modelBounds && (
-                    <group>
-                      {/* Width Line (X Axis) */}
-                      <CADArrow
-                        start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        label={`${detectedDims.width} cm`}
-                        extensionOffset={[0, 0, 0.15]}
-                        axis="x"
-                        color="#0058a3"
-                      />
-
-                      {/* Height Line (Y Axis) */}
-                      <CADArrow
-                        start={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        label={`${detectedDims.height} cm`}
-                        extensionOffset={[0.15, 0, 0]}
-                        axis="y"
-                        color="#0058a3"
-                      />
-
-                      {/* Depth Line (Z Axis) */}
-                      <CADArrow
-                        start={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z - modelBounds.size.z / 2]}
-                        end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
-                        label={`${detectedDims.depth} cm`}
-                        extensionOffset={[0.15, 0, 0]}
-                        axis="z"
-                        color="#0058a3"
-                      />
-                    </group>
-                  )}
-
-                  {/* Mode 2: Detailed Parts (Shelves, compartments) */}
-                  {measurementMode === 'detailed' && (
-                    <DetailedDimensions subComponents={detectedSubComponents} color="#ff7675" />
-                  )}
-
-                  {/* Mode 3: Custom Measurement Line */}
-                  {measurementMode === 'custom' && (
-                    <CustomMeasurement points={customPoints} color="#2ed573" />
-                  )}
-
-                </group>
-              </group>
-
-              {/* Adjust camera dynamically to fit viewport */}
-              <CameraFitter modelBounds={modelBounds} />
-
-              <ContactShadows position={[0, -0.52, 0]} opacity={0.5} scale={8} blur={2.4} far={3} />
-            </Suspense>
-
-            <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.05} makeDefault />
-          </Canvas>
-        </div>
-
-        {/* RIGHT: IKEA-style product configuration sidebar */}
-        <div className="product-layout-right" style={{
-          flex: '1 1 40%',
-          minWidth: 320,
-          background: '#ffffff',
-          boxShadow: '-4px 0 24px rgba(0,0,0,0.04)',
-          borderLeft: '1px solid #e5e5e5',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 5
-        }}>
-          <div style={{ padding: '40px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-            
-            {/* Header Title Section */}
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0058a3', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                {product.category || 'Furniture'}
-              </div>
-              <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, color: '#111111', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-                {product.name}
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                <Stars rating={product.rating} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
-                  {product.rating} <span style={{ color: '#767676', fontWeight: 400 }}>({product.reviews} reviews)</span>
-                </span>
-              </div>
-            </div>
-
-            <p style={{ margin: 0, fontSize: 15, color: '#484848', lineHeight: 1.6 }}>
-              {product.description}
-            </p>
-
-            {/* Price tag */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#111111' }}>
-                Rs. {Math.round(product.price * 83).toLocaleString('en-IN')}
-              </div>
-              {product.originalPrice && (
-                <div style={{ fontSize: 18, color: '#999', textDecoration: 'line-through', fontWeight: 600 }}>
-                  Rs. {Math.round(product.originalPrice * 83).toLocaleString('en-IN')}
-                </div>
-              )}
-            </div>
-
-            <div style={{ height: '1px', background: '#e5e5e5' }} />
-
-            {/* Product Configurator section */}
-            <div>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                1. Select Color Code
-              </h3>
-              <div style={{ display: 'flex', gap: 10 }}>
-                {CONFIG_COLORS.map((color) => (
-                  <button
-                    key={color.name}
-                    onClick={() => setSelectedColor(color.hex)}
-                    title={color.name}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      background: color.hex,
-                      borderRadius: '50%',
-                      cursor: 'pointer',
-                      border: selectedColor === color.hex ? '3px solid #0058a3' : '1px solid #cccccc',
-                      boxShadow: selectedColor === color.hex ? '0 0 8px rgba(0,88,163,0.3)' : 'none',
-                      transition: 'all 0.15s'
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                2. Select Material
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {CONFIG_MATERIALS.map((mat) => (
-                  <button
-                    key={mat}
-                    onClick={() => setSelectedMaterial(mat)}
-                    style={{
-                      padding: '10px 0',
-                      background: selectedMaterial === mat ? '#0058a3' : '#f5f5f5',
-                      color: selectedMaterial === mat ? '#ffffff' : '#111111',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    {mat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ height: '1px', background: '#e5e5e5' }} />
-
-            {/* Technical Specifications */}
-            <div>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Specifications (Calculated)
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                <div style={{ background: '#f5f5f5', padding: '12px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 18, fontWeight: 800 }}>{detectedDims.width}</div>
-                  <div style={{ fontSize: 11, color: '#767676', fontWeight: 600 }}>Width (cm)</div>
-                </div>
-                <div style={{ background: '#f5f5f5', padding: '12px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 18, fontWeight: 800 }}>{detectedDims.height}</div>
-                  <div style={{ fontSize: 11, color: '#767676', fontWeight: 600 }}>Height (cm)</div>
-                </div>
-                <div style={{ background: '#f5f5f5', padding: '12px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 18, fontWeight: 800 }}>{detectedDims.depth}</div>
-                  <div style={{ fontSize: 11, color: '#767676', fontWeight: 600 }}>Depth (cm)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  onClick={handleAddToCart}
-                  style={{
-                    flex: 1,
-                    padding: '16px 0',
-                    background: addedToCart ? '#2ed573' : '#0058a3',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '30px',
-                    fontSize: 15,
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(0,88,163,0.2)',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {addedToCart ? '✓ Added to Bag' : 'Add to Bag'}
-                </button>
-                
-                <button
-                  onClick={() => setWished(!wished)}
-                  style={{
-                    width: 52,
-                    height: 52,
-                    background: wished ? '#ffebee' : '#f5f5f5',
-                    border: 'none',
-                    borderRadius: '50%',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <span style={{ fontSize: 20, color: wished ? '#e91e63' : '#767676' }}>♥</span>
-                </button>
-              </div>
-
+            {/* TOP BAR: Measurement Modes Toggles */}
+            <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
-                onClick={handleViewInAR}
+                onClick={() => setMeasurementMode('overall')}
                 style={{
-                  padding: '14px 0',
-                  background: '#111111',
+                  background: measurementMode === 'overall' ? 'var(--accent)' : 'rgba(26, 26, 46, 0.8)',
                   color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '30px',
-                  fontSize: 14,
+                  border: measurementMode === 'overall' ? 'none' : '1px solid var(--border-subtle)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}
-              >
-                🕶️ View in AR Space
-              </button>
-
-              <button
-                onClick={() => navigate('/room-builder')}
-                style={{
-                  padding: '14px 0',
-                  background: '#ffffff',
-                  color: '#0058a3',
-                  border: '2px solid #0058a3',
-                  borderRadius: '30px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  textAlign: 'center',
+                  boxShadow: measurementMode === 'overall' ? 'var(--shadow-glow)' : 'none',
                   transition: 'all 0.2s'
                 }}
               >
-                🏠 Try in Room Planner
+                📐 Dimensions
+              </button>
+              <button
+                onClick={() => setMeasurementMode('detailed')}
+                style={{
+                  background: measurementMode === 'detailed' ? '#ff7675' : 'rgba(26, 26, 46, 0.8)',
+                  color: '#ffffff',
+                  border: measurementMode === 'detailed' ? 'none' : '1px solid var(--border-subtle)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: measurementMode === 'detailed' ? '0 0 15px rgba(255, 118, 117, 0.3)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📥 Key Sections
+              </button>
+              <button
+                onClick={() => setMeasurementMode('custom')}
+                style={{
+                  background: measurementMode === 'custom' ? '#00b894' : 'rgba(26, 26, 46, 0.8)',
+                  color: '#ffffff',
+                  border: measurementMode === 'custom' ? 'none' : '1px solid var(--border-subtle)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: measurementMode === 'custom' ? '0 0 15px rgba(0, 184, 148, 0.3)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📍 Live Measure
               </button>
             </div>
 
-            {/* Quality Badges */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e5e5e5', paddingTop: 20, marginTop: 12 }}>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: 20 }}>🚚</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#767676', marginTop: 4 }}>Free Delivery</div>
+            {/* Custom Mode Helper Banner */}
+            {measurementMode === 'custom' && (
+              <div style={{
+                position: 'absolute',
+                top: 70,
+                left: 20,
+                right: 20,
+                zIndex: 10,
+                background: 'rgba(0, 184, 148, 0.12)',
+                border: '1px solid rgba(0, 184, 148, 0.3)',
+                color: '#55efc4',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backdropFilter: 'blur(12px)'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FiActivity /> Select any two points on the model grid to inspect distance.
+                </span>
+                {customPoints.length > 0 && (
+                  <button 
+                    onClick={clearCustomPoints}
+                    style={{
+                      background: '#00b894',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clear Points
+                  </button>
+                )}
               </div>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: 20 }}>↩️</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#767676', marginTop: 4 }}>365 Days Return</div>
-              </div>
-              <div style={{ textAlign: 'center', flex: 1 }}>
-                <div style={{ fontSize: 20 }}>🛡️</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#767676', marginTop: 4 }}>2-Year Warranty</div>
-              </div>
+            )}
+
+            {/* FLOATING ACTION OVERLAY CONTROLS */}
+            <div style={{ position: 'absolute', bottom: 20, right: 20, zIndex: 10, display: 'flex', gap: 10 }}>
+              <button 
+                onClick={handleResetCamera} 
+                title="Reset camera zoom" 
+                style={{ 
+                  background: 'rgba(26,26,46,0.85)', 
+                  border: '1px solid var(--border-subtle)', 
+                  color: 'var(--text-primary)', 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: '50%', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <FiRotateCcw size={18} />
+              </button>
+              <button 
+                onClick={toggleFullscreen} 
+                title="Toggle fullscreen view" 
+                style={{ 
+                  background: 'rgba(26,26,46,0.85)', 
+                  border: '1px solid var(--border-subtle)', 
+                  color: 'var(--text-primary)', 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: '50%', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {isFullscreen ? <FiMinimize2 size={18} /> : <FiMaximize2 size={18} />}
+              </button>
+              <button 
+                onClick={handleScreenshot} 
+                title="Download viewport screenshot" 
+                style={{ 
+                  background: 'rgba(26,26,46,0.85)', 
+                  border: '1px solid var(--border-subtle)', 
+                  color: 'var(--text-primary)', 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: '50%', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <FiCamera size={18} />
+              </button>
+              <button 
+                onClick={handlePDFExport} 
+                title="Export Spec sheet PDF" 
+                style={{ 
+                  background: 'rgba(26,26,46,0.85)', 
+                  border: '1px solid var(--border-subtle)', 
+                  color: 'var(--text-primary)', 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: '50%', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <FiFileText size={18} />
+              </button>
             </div>
 
-          </div>
-        </div>
+            {/* THREE.JS CANVAS */}
+            <Canvas
+              gl={{ preserveDrawingBuffer: true }}
+              camera={{ position: [0, 1.5, 4], fov: 45 }}
+              style={{ width: '100%', height: '100%', cursor: measurementMode === 'custom' ? 'crosshair' : 'grab' }}
+            >
+              <Environment preset="city" />
+              <ambientLight intensity={0.55} />
+              <directionalLight position={[10, 12, 10]} intensity={1.1} castShadow />
+              
+              <Suspense fallback={
+                <Html center>
+                  <div style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', padding: '16px 32px', borderRadius: '30px', border: '1px solid var(--border-accent)', fontWeight: 700, boxShadow: 'var(--shadow-glow)' }}>
+                    Generating 3D assets...
+                  </div>
+                </Html>
+              }>
+                <group scale={scale} position={[0, -0.5, 0]}>
+                  <group ref={innerGroupRef} position={modelBounds ? [-modelBounds.center.x, -modelBounds.center.y, -modelBounds.center.z] : [0, 0, 0]}>
+                    
+                    {/* The GLB Mesh primitive */}
+                    <ProductModel
+                      glbModel={product.glbModel}
+                      selectedColor={selectedColor}
+                      selectedMaterial={selectedMaterial}
+                      setModelBounds={setModelBounds}
+                      measurementMode={measurementMode}
+                      addCustomPoint={addCustomPoint}
+                      innerGroupRef={innerGroupRef}
+                    />
 
+                    {/* Mode 1: Overall Dimensions Overlay */}
+                    {measurementMode === 'overall' && modelBounds && (
+                      <group>
+                        {/* Width Arrow */}
+                        <CADArrow
+                          start={[modelBounds.center.x - modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                          end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                          label={`${detectedDims.width} cm`}
+                          extensionOffset={[0, 0, 0.15]}
+                          axis="x"
+                          color="var(--accent)"
+                        />
+
+                        {/* Height Arrow */}
+                        <CADArrow
+                          start={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                          end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y + modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                          label={`${detectedDims.height} cm`}
+                          extensionOffset={[0.15, 0, 0]}
+                          axis="y"
+                          color="var(--accent)"
+                        />
+
+                        {/* Depth Arrow */}
+                        <CADArrow
+                          start={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z - modelBounds.size.z / 2]}
+                          end={[modelBounds.center.x + modelBounds.size.x / 2, modelBounds.center.y - modelBounds.size.y / 2, modelBounds.center.z + modelBounds.size.z / 2]}
+                          label={`${detectedDims.depth} cm`}
+                          extensionOffset={[0.15, 0, 0]}
+                          axis="z"
+                          color="var(--accent)"
+                        />
+                      </group>
+                    )}
+
+                    {/* Mode 2: Detailed Parts (Shelves, panels) */}
+                    {measurementMode === 'detailed' && (
+                      <DetailedDimensions subComponents={detectedSubComponents} color="#ff7675" />
+                    )}
+
+                    {/* Mode 3: Custom Point measuring */}
+                    {measurementMode === 'custom' && (
+                      <CustomMeasurement points={customPoints} color="#00b894" />
+                    )}
+
+                  </group>
+                </group>
+
+                <CameraFitter modelBounds={modelBounds} />
+                <ContactShadows position={[0, -0.52, 0]} opacity={0.4} scale={6} blur={2.0} far={2.5} />
+              </Suspense>
+
+              <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.05} makeDefault />
+            </Canvas>
+          </div>
+
+          {/* RIGHT: AURA configuration sidebar */}
+          <div style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-md)',
+            position: 'sticky',
+            top: '100px',
+            height: 'fit-content'
+          }}>
+            <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+              
+              {/* Product Header */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-light)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 4 }}>
+                  {product.category || 'Collection'}
+                </div>
+                <h1 style={{ 
+                  margin: 0, 
+                  fontSize: 28, 
+                  fontWeight: 800, 
+                  color: 'var(--text-primary)', 
+                  fontFamily: 'var(--font-display)',
+                  lineHeight: 1.2 
+                }}>
+                  {product.name}
+                </h1>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                  <Stars rating={product.rating} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    {product.rating} <span style={{ color: 'var(--text-muted)' }}>({product.reviews} reviews)</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Price Details */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Rs. {Math.round(product.price * 83).toLocaleString('en-IN')}
+                </div>
+                {product.originalPrice && (
+                  <div style={{ fontSize: 16, color: 'var(--text-muted)', textDecoration: 'line-through', fontWeight: 600 }}>
+                    Rs. {Math.round(product.originalPrice * 83).toLocaleString('en-IN')}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                {product.description}
+              </p>
+
+              <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+
+              {/* Configurator 1: Colors selection (uses product colors) */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>
+                    Standard Finishes
+                  </h3>
+                  <span style={{ fontSize: 12, color: 'var(--accent-light)', fontWeight: 600 }}>
+                    {getColorName(selectedColor)}
+                  </span>
+                </div>
+                
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {(product.colors || ['#2D3436']).map((hex) => (
+                    <button
+                      key={hex}
+                      onClick={() => setSelectedColor(hex)}
+                      title={getColorName(hex)}
+                      className="config-color-btn"
+                      style={{
+                        background: hex,
+                        border: selectedColor === hex ? '3px solid var(--accent)' : '1px solid var(--border-subtle)',
+                        boxShadow: selectedColor === hex ? 'var(--shadow-glow)' : 'none'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Configurator 2: Material selections */}
+              <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>
+                  Material Texture
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {CONFIG_MATERIALS.map((mat) => (
+                    <button
+                      key={mat}
+                      onClick={() => setSelectedMaterial(mat)}
+                      className={`config-material-btn ${selectedMaterial === mat ? 'active' : ''}`}
+                    >
+                      {mat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bounding box sizes grid */}
+              <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>
+                  Dynamic Dimensions
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', padding: '12px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{detectedDims.width}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>Width (cm)</div>
+                  </div>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', padding: '12px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{detectedDims.height}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>Height (cm)</div>
+                  </div>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', padding: '12px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{detectedDims.depth}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>Depth (cm)</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+
+              {/* Interactive buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    onClick={handleAddToCart}
+                    className="action-btn-primary"
+                    style={{
+                      background: addedToCart ? 'var(--success)' : 'var(--gradient-primary)',
+                      boxShadow: addedToCart ? '0 0 15px rgba(0, 184, 148, 0.3)' : 'var(--shadow-glow)',
+                    }}
+                  >
+                    <FiShoppingCart />
+                    {addedToCart ? 'Added to Bag' : 'Add to Bag'}
+                  </button>
+                  
+                  <button
+                    onClick={() => setWished(!wished)}
+                    style={{
+                      width: 52,
+                      height: 52,
+                      background: wished ? 'rgba(225, 112, 85, 0.15)' : 'rgba(255,255,255,0.03)',
+                      border: wished ? '1px solid rgba(225, 112, 85, 0.3)' : '1px solid var(--border-subtle)',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      color: wished ? '#e17055' : 'var(--text-secondary)'
+                    }}
+                  >
+                    <FiHeart size={20} fill={wished ? '#e17055' : 'none'} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleViewInAR}
+                  className="action-btn-secondary"
+                >
+                  🕶️ View in AR Space
+                </button>
+
+                <button
+                  onClick={() => navigate('/room-builder')}
+                  className="action-btn-outline"
+                >
+                  <FiCompass /> Try in Room Planner
+                </button>
+              </div>
+
+              {/* Service features footer badges */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                borderTop: '1px solid var(--border-subtle)', 
+                paddingTop: 20, 
+                marginTop: 8 
+              }}>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <FiTruck size={20} style={{ color: 'var(--accent-light)' }} />
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 6, textTransform: 'uppercase' }}>Free Delivery</div>
+                </div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <FiRotateCcw size={20} style={{ color: 'var(--accent-light)' }} />
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 6, textTransform: 'uppercase' }}>365d Returns</div>
+                </div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <FiShield size={20} style={{ color: 'var(--accent-light)' }} />
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', marginTop: 6, textTransform: 'uppercase' }}>2y Warranty</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
