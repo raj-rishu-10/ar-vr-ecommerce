@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useGLTF, Html } from '@react-three/drei';
 import { Select } from '@react-three/postprocessing';
 import { useFurnitureStore } from '../../stores/useFurnitureStore';
@@ -20,6 +20,13 @@ export default function FurnitureItem({ item, setRef }) {
   const addItem = useCartStore(s => s.addItem);
   const [showRotationSubmenu, setShowRotationSubmenu] = useState(false);
   const isSelected = activeItemId === item.instanceId;
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Clone scene inside useMemo to keep mesh references stable
   const clonedScene = useMemo(() => {
@@ -134,7 +141,7 @@ export default function FurnitureItem({ item, setRef }) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 6,
+            gap: isMobile ? 3 : 6,
             fontFamily: "'Inter', system-ui, sans-serif"
           }}>
             {/* Main Action Bar */}
@@ -142,9 +149,9 @@ export default function FurnitureItem({ item, setRef }) {
               background: 'rgba(17, 17, 17, 0.95)',
               backdropFilter: 'blur(10px)',
               borderRadius: 16,
-              padding: '6px 8px',
+              padding: isMobile ? '4px 6px' : '6px 8px',
               display: 'flex',
-              gap: 4,
+              gap: isMobile ? 2 : 4,
               boxShadow: '0 8px 32px rgba(0,0,0,0.24)',
               border: '1px solid rgba(255,255,255,0.12)'
             }}>
@@ -190,11 +197,11 @@ export default function FurnitureItem({ item, setRef }) {
                     display: 'flex', 
                     flexDirection: 'column', 
                     alignItems: 'center', 
-                    gap: 4,
-                    padding: '8px 10px', 
+                    gap: isMobile ? 0 : 4,
+                    padding: isMobile ? '6px' : '8px 10px', 
                     borderRadius: 12,
                     transition: 'background 0.2s',
-                    minWidth: 64
+                    minWidth: isMobile ? 38 : 64
                   }}
                   onMouseEnter={e => {
                     if (!(btn.label === 'Rotate' && showRotationSubmenu)) {
@@ -207,8 +214,10 @@ export default function FurnitureItem({ item, setRef }) {
                     }
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center' }}>{btn.icon}</span>
-                  <span style={{ fontSize: '9px', fontWeight: 700, whiteSpace: 'nowrap', opacity: 0.9 }}>{btn.label}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', transform: isMobile ? 'scale(0.85)' : 'none' }}>{btn.icon}</span>
+                  {!isMobile && (
+                    <span style={{ fontSize: '9px', fontWeight: 700, whiteSpace: 'nowrap', opacity: 0.9 }}>{btn.label}</span>
+                  )}
                 </button>
               ))}
             </div>

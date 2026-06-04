@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -16,10 +16,13 @@ const Confirmation = lazy(() => import('./pages/Confirmation'));
 const ARRoomBuilder  = lazy(() => import('./pages/ARRoomBuilder'));
 const ARMultiViewer  = lazy(() => import('./pages/ARMultiViewer'));
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const hideNavbar = ['/room-builder', '/ar', '/ar-multi'].includes(location.pathname);
+
   return (
-    <BrowserRouter>
-      <Navbar />
+    <>
+      {!hideNavbar && <Navbar />}
       <CartSidebar />
       <AnimatePresence mode="wait">
         <Suspense fallback={<LoadingSpinner />}>
@@ -42,6 +45,14 @@ function App() {
         <Route path="/ar-multi" element={null} />
         <Route path="*" element={<Footer />} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }

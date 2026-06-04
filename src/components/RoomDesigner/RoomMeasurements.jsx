@@ -24,24 +24,24 @@ export default function RoomMeasurements() {
           <meshBasicMaterial color="#0058a3" opacity={0.4} transparent />
         </mesh>
         
-        <Html center distanceFactor={8}>
+        <Html center distanceFactor={10}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#0058a3',
             fontFamily: "'Outfit', 'Inter', sans-serif",
-            fontSize: '13px',
+            fontSize: '11px',
             fontWeight: 800,
             background: '#ffffff',
-            padding: '4px 10px',
+            padding: '3px 8px',
             borderRadius: '20px',
-            border: '2px solid #0058a3',
+            border: '1.5px solid #0058a3',
             whiteSpace: 'nowrap',
-            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.08)',
             userSelect: 'none'
           }}>
-            ←──────── {wCm} cm ────────→
+            ← {wCm} cm →
           </div>
         </Html>
       </group>
@@ -54,25 +54,25 @@ export default function RoomMeasurements() {
           <meshBasicMaterial color="#0058a3" opacity={0.4} transparent />
         </mesh>
         
-        <Html center distanceFactor={8}>
+        <Html center distanceFactor={10}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#0058a3',
             fontFamily: "'Outfit', 'Inter', sans-serif",
-            fontSize: '13px',
+            fontSize: '11px',
             fontWeight: 800,
             background: '#ffffff',
-            padding: '4px 10px',
+            padding: '3px 8px',
             borderRadius: '20px',
-            border: '2px solid #0058a3',
+            border: '1.5px solid #0058a3',
             whiteSpace: 'nowrap',
-            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.08)',
             transform: 'rotate(-90deg)',
             userSelect: 'none'
           }}>
-            ←──────── {dCm} cm ────────→
+            ← {dCm} cm →
           </div>
         </Html>
       </group>
@@ -85,24 +85,24 @@ export default function RoomMeasurements() {
           <meshBasicMaterial color="#0058a3" opacity={0.4} transparent />
         </mesh>
         
-        <Html center distanceFactor={8}>
+        <Html center distanceFactor={10}>
           <div style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             color: '#0058a3',
             fontFamily: "'Outfit', 'Inter', sans-serif",
-            fontSize: '12px',
+            fontSize: '10px',
             fontWeight: 800,
             background: '#ffffff',
-            padding: '6px 8px',
+            padding: '4px 6px',
             borderRadius: '12px',
-            border: '2px solid #0058a3',
-            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+            border: '1.5px solid #0058a3',
+            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.08)',
             userSelect: 'none'
           }}>
             <span>↑</span>
-            <span style={{ margin: '2px 0' }}>{hCm} cm</span>
+            <span style={{ margin: '1px 0' }}>{hCm} cm</span>
             <span>↓</span>
           </div>
         </Html>
