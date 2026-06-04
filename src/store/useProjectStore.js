@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { safeUUID } from '../utils/uuid';
 
 export const useProjectStore = create((set, get) => ({
   projects: [],
@@ -15,7 +16,7 @@ export const useProjectStore = create((set, get) => ({
 
   createProject: (name, type = 'empty') => {
     const newProject = {
-      id: crypto.randomUUID(),
+      id: safeUUID(),
       name,
       type,
       updatedAt: new Date().toISOString(),

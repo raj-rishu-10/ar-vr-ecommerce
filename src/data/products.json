@@ -214,5 +214,23 @@
     "glbModel": "/models/Mixer.glb",
     "badge": "Smart Home",
     "arEnabled": true
+  },
+  {
+    "id": 13,
+    "name": "BILLY Bookcase",
+    "category": "storage",
+    "price": 89.99,
+    "originalPrice": 119.99,
+    "description": "Versatile classic bookcase with adjustable wood shelves, matching IKEA design.",
+    "image": "https://images.unsplash.com/photo-1594620302200-9a762244a156?w=400&h=400&fit=crop",
+    "rating": 4.8,
+    "reviews": 184,
+    "colors": ["#ffffff", "#d4a574", "#2d3436"],
+    "dimensions": { "width": 80, "height": 202, "depth": 28 },
+    "modelScale": [0.8, 2.02, 0.28],
+    "modelColor": "#ffffff",
+    "glbModel": "/models/ToyTrain.glb",
+    "badge": "BESTSELLER",
+    "arEnabled": true
   }
 ]

@@ -6,18 +6,106 @@ import { TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 export default function FurnitureManager() {
-  const { placedItems, activeItemId, interactionMode, updateFurnitureTransform } = useFurnitureStore();
+  const { 
+    placedItems, 
+    activeItemId, 
+    interactionMode, 
+    updateFurnitureTransform, 
+    isColliding, 
+    setIsColliding 
+  } = useFurnitureStore();
   const { dimensions } = useRoomStore();
   const itemRefs = useRef({});
   const [target, setTarget] = useState(null);
+  
+  const lastValidPosition = useRef([0, 0, 0]);
+  const lastValidRotation = useRef([0, 0, 0]);
 
   useEffect(() => {
-    // Add small delay so React commits the refs to the DOM/Three before we try to attach TransformControls
+    // Small delay to ensure Three.js refs are fully populated
     const timeout = setTimeout(() => {
-      setTarget(itemRefs.current[activeItemId] || null);
-    }, 50);
+      const activeObj = itemRefs.current[activeItemId];
+      setTarget(activeObj || null);
+      if (activeObj) {
+        lastValidPosition.current = activeObj.position.toArray();
+        lastValidRotation.current = activeObj.rotation.toArray();
+      }
+    }, 60);
     return () => clearTimeout(timeout);
   }, [activeItemId, placedItems.length]);
+
+  const checkCollision = (obj) => {
+    if (!obj) return false;
+    
+    // 1. Calculate active box
+    const activeBox = new THREE.Box3().setFromObject(obj);
+    
+    // 2. Room wall boundaries check
+    const halfW = dimensions.width / 2;
+    const halfD = dimensions.depth / 2;
+    const wallBuffer = 0.05; // buffer for boundary collision
+
+    if (
+      activeBox.min.x < -halfW - wallBuffer || 
+      activeBox.max.x > halfW + wallBuffer || 
+      activeBox.min.z < -halfD - wallBuffer || 
+      activeBox.max.z > halfD + wallBuffer
+    ) {
+      return true; // Wall collision
+    }
+
+    // 3. Object-to-object check
+    for (const key of Object.keys(itemRefs.current)) {
+      if (key === activeItemId) continue;
+      const otherObj = itemRefs.current[key];
+      if (otherObj) {
+        const otherBox = new THREE.Box3().setFromObject(otherObj);
+        if (activeBox.intersectsBox(otherBox)) {
+          return true; // Overlap collision
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const handleTransformChange = () => {
+    if (target) {
+      const colliding = checkCollision(target);
+      setIsColliding(colliding);
+      
+      // Snapping to walls
+      const pos = target.position;
+      const halfW = dimensions.width / 2;
+      const halfD = dimensions.depth / 2;
+      const snapDist = 0.3; // 30cm snap threshold
+
+      const activeBox = new THREE.Box3().setFromObject(target);
+      const size = new THREE.Vector3();
+      activeBox.getSize(size);
+
+      // Snap Left (West) Wall
+      if (Math.abs((pos.x - size.x / 2) - (-halfW)) < snapDist) {
+        pos.x = -halfW + size.x / 2;
+      }
+      // Snap Right (East) Wall
+      if (Math.abs((pos.x + size.x / 2) - halfW) < snapDist) {
+        pos.x = halfW - size.x / 2;
+      }
+      // Snap Back (North) Wall
+      if (Math.abs((pos.z - size.z / 2) - (-halfD)) < snapDist) {
+        pos.z = -halfD + size.z / 2;
+      }
+      // Snap Front (South) Wall
+      if (Math.abs((pos.z + size.z / 2) - halfD) < snapDist) {
+        pos.z = halfD - size.z / 2;
+      }
+
+      // Always snap to floor
+      pos.y = 0;
+      target.position.copy(pos);
+    }
+  };
 
   return (
     <group name="furniture-layer">
@@ -25,31 +113,24 @@ export default function FurnitureManager() {
         <TransformControls 
           object={target}
           mode={interactionMode}
-          translationSnap={0.1}
-          rotationSnap={Math.PI / 4}
+          translationSnap={0.05} // 5cm fine grid snapping
+          rotationSnap={Math.PI / 12} // 15 degrees snap
+          onChange={handleTransformChange}
           onMouseUp={() => {
             if (target) {
-              const pos = target.position;
+              const collided = checkCollision(target);
+              if (collided) {
+                // Overlap or boundary violation - snap back to last valid transform
+                target.position.fromArray(lastValidPosition.current);
+                target.rotation.fromArray(lastValidRotation.current);
+                setIsColliding(false);
+              } else {
+                // Success! Set new valid positions
+                lastValidPosition.current = target.position.toArray();
+                lastValidRotation.current = target.rotation.toArray();
+              }
               
-              // Recalculate box for collision offsets using actual current scale
-              const box = new THREE.Box3().setFromObject(target);
-              const size = new THREE.Vector3();
-              box.getSize(size);
-              
-              const halfW = dimensions.width / 2;
-              const halfD = dimensions.depth / 2;
-              
-              // We don't divide size by 2 for padding because setFromObject already accounts for scale
-              const paddingX = size.x / 2; 
-              const paddingZ = size.z / 2;
-
-              pos.x = THREE.MathUtils.clamp(pos.x, -halfW + paddingX, halfW - paddingX);
-              pos.z = THREE.MathUtils.clamp(pos.z, -halfD + paddingZ, halfD - paddingZ);
-              pos.y = Math.max(0, pos.y);
-              
-              target.position.copy(pos);
-
-              updateFurnitureTransform(activeItemId, 'position', pos.toArray());
+              updateFurnitureTransform(activeItemId, 'position', target.position.toArray());
               updateFurnitureTransform(activeItemId, 'rotation', target.rotation.toArray());
               updateFurnitureTransform(activeItemId, 'scale', target.scale.toArray());
             }

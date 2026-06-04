@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useFurnitureStore } from '../../stores/useFurnitureStore';
 import useCartStore from '../../store/cartStore';
 import products from '../../data/products.json';
+import { safeUUID } from '../../utils/uuid';
 
 export default function ItemOptionsPanel({ item, onClose }) {
   const { removeFurniture, addFurniture, updateFurnitureTransform, setInteractionMode } = useFurnitureStore();
@@ -31,7 +32,7 @@ export default function ItemOptionsPanel({ item, onClose }) {
       removeFurniture(item.instanceId);
       const newItem = {
         ...recItem,
-        instanceId: crypto.randomUUID(),
+        instanceId: safeUUID(),
         position: [...item.position],
         rotation: [...item.rotation],
         scale: [...item.scale]
@@ -44,7 +45,7 @@ export default function ItemOptionsPanel({ item, onClose }) {
       // Just add to room near the current item
       const newItem = {
         ...recItem,
-        instanceId: crypto.randomUUID(),
+        instanceId: safeUUID(),
         position: [item.position[0] + 1, item.position[1], item.position[2] + 1],
         rotation: [0, 0, 0],
         scale: [1, 1, 1]
