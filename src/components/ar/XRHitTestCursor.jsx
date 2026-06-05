@@ -128,7 +128,7 @@ export default function XRHitTestCursor() {
         placeItem(
           activeProduct,
           targetPos,
-          [0, 0, 0],
+          [0, ringRef.current ? ringRef.current.rotation.y : 0, 0],
           activeProduct.modelScale || [1, 1, 1]
         );
         if (navigator.vibrate) navigator.vibrate(50);
@@ -174,8 +174,16 @@ export default function XRHitTestCursor() {
           ringRef.current.quaternion,
           new THREE.Vector3()
         );
-        // Force the reticle to be flat. HitTest rotations are notoriously jittery on the Y-axis.
+        // Force the reticle to be flat on the ground.
         ringRef.current.quaternion.identity();
+        
+        // Make the reticle (and hologram) face the camera like IKEA Place
+        if (camera) {
+          const dx = camera.position.x - targetPosRef.current.x;
+          const dz = camera.position.z - targetPosRef.current.z;
+          ringRef.current.rotation.y = Math.atan2(dx, dz);
+        }
+
         ringRef.current.scale.set(1, 1, 1);
         isTrackingRef.current = true;
       } else {
