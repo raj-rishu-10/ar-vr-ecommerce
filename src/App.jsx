@@ -11,7 +11,6 @@ const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const ARViewer = lazy(() => import('./pages/ARViewer'));
 const Checkout = lazy(() => import('./pages/Checkout'));
-const SavedScenes = lazy(() => import('./pages/SavedScenes'));
 const Confirmation = lazy(() => import('./pages/Confirmation'));
 const ARRoomBuilder  = lazy(() => import('./pages/ARRoomBuilder'));
 
@@ -31,7 +30,6 @@ function AppContent() {
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/ar" element={<ARViewer />} />
             <Route path="/checkout" element={<Checkout />} />
-            <Route path="/scenes" element={<SavedScenes />} />
             <Route path="/room-builder" element={<ARRoomBuilder />} />
             <Route path="/confirmation" element={<Confirmation />} />
           </Routes>

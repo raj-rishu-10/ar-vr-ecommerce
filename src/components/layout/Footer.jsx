@@ -16,7 +16,6 @@ export default function Footer() {
             <h6 className="footer-title">Explore</h6>
             <Link to="/products" className="footer-link">Shop All</Link>
             <Link to="/ar" className="footer-link">AR Viewer</Link>
-            <Link to="/scenes" className="footer-link">My Scenes</Link>
           </div>
           <div className="col-lg-2 col-md-6">
             <h6 className="footer-title">Company</h6>
