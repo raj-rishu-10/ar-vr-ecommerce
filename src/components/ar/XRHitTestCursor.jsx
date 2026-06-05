@@ -23,10 +23,20 @@ function CursorPreview({ product }) {
     return cl;
   }, [scene]);
 
+  const groupRef = useRef();
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05 + 0.05;
+      groupRef.current.rotation.y += 0.01;
+    }
+  });
+
   return (
-    <Center bottom>
-      <primitive object={clone} scale={product.modelScale || [1, 1, 1]} />
-    </Center>
+    <group ref={groupRef}>
+      <Center bottom>
+        <primitive object={clone} scale={product.modelScale || [1, 1, 1]} />
+      </Center>
+    </group>
   );
 }
 
@@ -112,6 +122,7 @@ export default function XRHitTestCursor() {
         [0, 0, 0],
         activeProduct.modelScale || [1, 1, 1]
       );
+      if (navigator.vibrate) navigator.vibrate(50);
       // placeItem() automatically switches to 'move' mode in the store
     } else if (interactionMode === 'move' && activeItemId) {
       // DROP MODE: The object is currently following the cursor. Tap to drop it in place!
@@ -121,6 +132,7 @@ export default function XRHitTestCursor() {
       // Lock it in by deselecting it and returning to placement mode.
       const setPlacementMode = useARSceneStore.getState().setPlacementMode;
       setPlacementMode();
+      if (navigator.vibrate) navigator.vibrate(40);
     }
   }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
 

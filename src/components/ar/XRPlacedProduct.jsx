@@ -34,17 +34,34 @@ export default function XRPlacedProduct({ item }) {
   const groupRef = useRef();
   const currentScale = useRef(new THREE.Vector3(0.01, 0.01, 0.01));
   const targetScale = useMemo(() => new THREE.Vector3(...(item.scale || [1, 1, 1])), [item.scale]);
-
-  // Pop-in animation & Dragging logic
+  const currentRotation = useRef(new THREE.Euler().fromArray(item.rotation));
+  
+  // Create a single animated material state for the clone
   useFrame((state, delta) => {
     if (groupRef.current) {
+      // Smooth Scale
       currentScale.current.lerp(targetScale, Math.min(delta * 10, 1));
       groupRef.current.scale.copy(currentScale.current);
 
+      // Smooth Rotation
+      const targetQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(...item.rotation));
+      groupRef.current.quaternion.slerp(targetQuat, Math.min(delta * 10, 1));
+
       // Drag without React re-renders!
-      if (isSelected && useARSceneStore.getState().interactionMode === 'move') {
+      const isDragging = isSelected && useARSceneStore.getState().interactionMode === 'move';
+      if (isDragging) {
         groupRef.current.position.lerp(globalCursorTarget, delta * 15);
       }
+
+      // Ghosting effect
+      scene.traverse((node) => {
+        if (node.isMesh && node.material) {
+          node.material.transparent = true;
+          // Smoothly lerp opacity down to 0.5 when dragging
+          const targetOpacity = isDragging ? 0.5 : 1.0;
+          node.material.opacity += (targetOpacity - node.material.opacity) * delta * 10;
+        }
+      });
     }
   });
 
