@@ -470,35 +470,82 @@
 
 /* Responsive */
 @media (max-width: 900px) {
+  .ar-ui-layer {
+    padding: max(env(safe-area-inset-top, 16px), 16px) 16px 0;
+  }
+
   .ar-bottom-ui {
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: stretch;
-    gap: 16px;
+    gap: 12px;
+    padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
   }
   
   .ar-product-card {
     width: 100%;
     padding: 20px;
+    border-radius: 28px;
+    gap: 16px;
   }
   
   .ar-carousel-container {
-    width: 100%;
-    max-width: none;
-    padding: 16px 20px;
+    width: auto;
+    align-self: center;
+    max-width: 100%;
+    padding: 10px 14px;
+    border-radius: 30px;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .carousel-title {
+    display: none;
+  }
+
+  .ar-carousel {
+    gap: 10px;
+    padding-bottom: 0;
   }
   
+  .ar-product-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   .ar-product-title {
-    font-size: 24px;
+    font-size: 22px;
+  }
+  
+  .ar-product-price {
+    font-size: 18px;
+    padding: 4px 12px;
+  }
+
+  .ar-product-dims {
+    gap: 8px;
+  }
+
+  .dim-item {
+    padding: 10px;
+    border-radius: 14px;
   }
   
   .primary-btn, .secondary-btn {
     padding: 14px;
     font-size: 14px;
+    border-radius: 14px;
   }
   
   .carousel-item {
-    width: 64px;
-    height: 64px;
-    border-radius: 14px;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+  }
+  
+  .dim-toggle-btn {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 12px;
   }
 }
