@@ -107,33 +107,43 @@ export default function XRHitTestCursor() {
   const handleTapToPlace = useCallback(() => {
     if (!activeProduct) return;
 
-    // Debounce: prevent double-fire from DOM ar-tap + WebXR select
-    const now = performance.now();
-    if (now - lastPlacedTime.current < 500) return;
-    lastPlacedTime.current = now;
-
-    const targetPos = getCurrentTargetPosition();
-
-    if (interactionMode === 'place') {
-      // PLACE MODE: Create a new object at the cursor position
-      placeItem(
-        activeProduct,
-        targetPos,
-        [0, 0, 0],
-        activeProduct.modelScale || [1, 1, 1]
-      );
-      if (navigator.vibrate) navigator.vibrate(50);
-      // placeItem() automatically switches to 'move' mode in the store
-    } else if (interactionMode === 'move' && activeItemId) {
-      // DROP MODE: The object is currently following the cursor. Tap to drop it in place!
-      // Save the final dropped position to the React store so it persists.
-      updateTransform(activeItemId, { position: globalCursorTarget.toArray() });
+    // Wait a brief moment (50ms) to see if an object was clicked.
+    // Native WebXR 'select' fires BEFORE React Three Fiber's 'onClick'.
+    setTimeout(() => {
+      // Debounce: prevent double-fire
+      const now = performance.now();
+      if (now - lastPlacedTime.current < 500) return;
       
-      // Lock it in by deselecting it and returning to placement mode.
-      const setPlacementMode = useARSceneStore.getState().setPlacementMode;
-      setPlacementMode();
-      if (navigator.vibrate) navigator.vibrate(40);
-    }
+      // Prevent environment tap if an object was just clicked (within 150ms)
+      if (window.lastObjectClickTime && now - window.lastObjectClickTime < 150) {
+        return; 
+      }
+
+      lastPlacedTime.current = now;
+
+      const targetPos = getCurrentTargetPosition();
+
+      if (interactionMode === 'place') {
+        // PLACE MODE: Create a new object at the cursor position
+        placeItem(
+          activeProduct,
+          targetPos,
+          [0, 0, 0],
+          activeProduct.modelScale || [1, 1, 1]
+        );
+        if (navigator.vibrate) navigator.vibrate(50);
+        // placeItem() automatically switches to 'move' mode in the store
+      } else if (interactionMode === 'move' && activeItemId) {
+        // DROP MODE: The object is currently following the cursor. Tap to drop it in place!
+        // Save the final dropped position to the React store so it persists.
+        updateTransform(activeItemId, { position: globalCursorTarget.toArray() });
+        
+        // Lock it in by deselecting it and returning to placement mode.
+        const setPlacementMode = useARSceneStore.getState().setPlacementMode;
+        setPlacementMode();
+        if (navigator.vibrate) navigator.vibrate(40);
+      }
+    }, 50);
   }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
 
   // Use native WebXR 'select' event

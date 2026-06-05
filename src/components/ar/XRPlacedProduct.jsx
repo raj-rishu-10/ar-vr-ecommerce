@@ -26,7 +26,9 @@ export default function XRPlacedProduct({ item }) {
   
   const isSelected = activeItemId === item.id;
 
-  const handleSelect = () => {
+  const handleSelect = (e) => {
+    e.stopPropagation(); // Stop React Three Fiber from bubbling
+    window.lastObjectClickTime = performance.now();
     setActiveItemId(item.id);
     setMoveMode(); // Switch to move mode when user taps on an existing object
   };
