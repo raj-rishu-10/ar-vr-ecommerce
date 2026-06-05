@@ -58,6 +58,12 @@ export default function XRHitTestCursor() {
         } else {
           ringRef.current.position.lerp(targetPosRef.current, delta * 15);
         }
+        
+        // --- DRAG / MOVE LOGIC ---
+        // If an item is selected and we are in move mode, make it follow the cursor smoothly!
+        if (interactionMode === 'move' && activeItemId) {
+          updateTransform(activeItemId, { position: ringRef.current.position.toArray() });
+        }
       } else {
         ringRef.current.visible = false;
       }
@@ -109,10 +115,12 @@ export default function XRHitTestCursor() {
       );
       // placeItem() automatically switches to 'move' mode in the store
     } else if (interactionMode === 'move' && activeItemId) {
-      // MOVE MODE: Relocate the selected object to the cursor position
-      updateTransform(activeItemId, { position: targetPos });
+      // DROP MODE: The object is currently following the cursor. Tap to drop it in place!
+      // We lock it in by deselecting it and returning to placement mode.
+      const setPlacementMode = useARSceneStore.getState().setPlacementMode;
+      setPlacementMode();
     }
-  }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
+  }, [activeProduct, interactionMode, activeItemId, placeItem, getCurrentTargetPosition]);
 
   // Use native WebXR 'select' event
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);

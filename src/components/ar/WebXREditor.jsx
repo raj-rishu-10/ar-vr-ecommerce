@@ -217,7 +217,7 @@ export default function WebXREditor() {
         <Canvas
           className="canvas-container"
           shadows
-          gl={{ antialias:true, alpha:false }}
+          gl={{ antialias:true, alpha:false, preserveDrawingBuffer: true }}
           camera={{ position:[0, 1.2, 2.5], fov:60 }}
           onCreated={() => setCanvasReady(true)}
         >
@@ -258,6 +258,15 @@ export default function WebXREditor() {
           )}
 
           <div className="toolbar">
+            <button className="btn-tool" onClick={() => {
+              const canvas = document.querySelector('.canvas-container canvas');
+              if (canvas) {
+                const link = document.createElement('a');
+                link.download = `ar-scene-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+              }
+            }}>📸 Photo</button>
             <button id="btn-undo" className="btn-tool undo" onClick={undo}>↩ Undo</button>
             <button className="btn-tool clear" onClick={() => {
               if (window.confirm("Are you sure you want to clear all objects?")) clearScene();
