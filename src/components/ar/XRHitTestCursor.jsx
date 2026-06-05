@@ -7,27 +7,29 @@ import { useARSceneStore } from '../../store/useARSceneStore';
 
 const matrixHelper = new THREE.Matrix4();
 
-// Holographic preview of the selected furniture shown on the cursor
+// ─── Holographic Preview ──────────────────────────────────────────────────────
+// Semi-transparent, gently bobbing preview of the selected product.
+// The CursorPreview itself does NOT rotate (the parent ringRef handles facing).
 function CursorPreview({ product }) {
   const { scene } = useGLTF(product.glbModel);
   const clone = useMemo(() => {
     const cl = scene.clone(true);
-    // Make the preview semi-transparent / holographic
     cl.traverse((child) => {
       if (child.isMesh) {
         child.material = child.material.clone();
         child.material.transparent = true;
-        child.material.opacity = 0.35;
+        child.material.opacity = 0.4;
+        child.castShadow = false;
       }
     });
     return cl;
   }, [scene]);
 
   const groupRef = useRef();
+  // Gentle bob only — no Y-rotation here, the parent handles orientation
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05 + 0.05;
-      groupRef.current.rotation.y += 0.01;
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.8) * 0.04 + 0.06;
     }
   });
 
@@ -40,151 +42,96 @@ function CursorPreview({ product }) {
   );
 }
 
+// ─── Exported cursor target (read by XRPlacedProduct in its useFrame loop) ───
 export const globalCursorTarget = new THREE.Vector3();
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function XRHitTestCursor() {
-  const ringRef = useRef();
-  const placeItem = useARSceneStore((s) => s.placeItem);
-  const activeProduct = useARSceneStore((s) => s.activeProduct);
-  const interactionMode = useARSceneStore((s) => s.interactionMode);
-  const activeItemId = useARSceneStore((s) => s.activeItemId);
-  const updateTransform = useARSceneStore((s) => s.updateTransform);
+  // ringRef: the root group — positioned on the floor, oriented to face camera
+  const ringRef   = useRef();
+  // reticleRef: child group that spins independently on the floor plane
+  const reticleRef = useRef();
+
+  const placeItem        = useARSceneStore((s) => s.placeItem);
+  const activeProduct    = useARSceneStore((s) => s.activeProduct);
+  const interactionMode  = useARSceneStore((s) => s.interactionMode);
+  const activeItemId     = useARSceneStore((s) => s.activeItemId);
+  const updateTransform  = useARSceneStore((s) => s.updateTransform);
+  const setStabilized    = useARSceneStore((s) => s.setStabilized);
+  const isStabilized     = useARSceneStore((s) => s.isStabilized);
 
   const { camera } = useThree();
 
-  const cameraPosRef = useRef(new THREE.Vector3());
-  const cameraDirRef = useRef(new THREE.Vector3());
+  // Live refs — updated every frame without triggering React re-renders
+  const cameraPosRef    = useRef(new THREE.Vector3());
+  const cameraDirRef    = useRef(new THREE.Vector3());
+  const targetPosRef    = useRef(new THREE.Vector3());
+  const targetYawRef    = useRef(0);            // target facing angle (Y rotation)
+  const currentYawRef   = useRef(0);            // smoothly interpolated facing angle
+  const isTrackingRef   = useRef(false);
+  const lastPlacedTime  = useRef(0);
 
-  const targetPosRef = useRef(new THREE.Vector3());
-  const isTrackingRef = useRef(false);
-
+  // ── Per-frame: lerp ring toward target, spin reticle ─────────────────────
   useFrame((state, delta) => {
+    // Track camera every frame
     camera.getWorldPosition(cameraPosRef.current);
     camera.getWorldDirection(cameraDirRef.current);
 
-    if (ringRef.current) {
-      if (isTrackingRef.current) {
-        if (!ringRef.current.visible) {
-          ringRef.current.position.copy(targetPosRef.current);
-          ringRef.current.visible = true;
-        } else {
-          ringRef.current.position.lerp(targetPosRef.current, delta * 15);
-        }
-        
-        // Expose the raw position for XRPlacedProduct to read directly without triggering React re-renders!
-        globalCursorTarget.copy(ringRef.current.position);
+    if (!ringRef.current) return;
+
+    if (isTrackingRef.current) {
+      // Lerp position for smooth glide
+      if (!ringRef.current.visible) {
+        // First appearance: snap immediately
+        ringRef.current.position.copy(targetPosRef.current);
+        ringRef.current.visible = true;
+        currentYawRef.current = targetYawRef.current;
       } else {
-        ringRef.current.visible = false;
+        ringRef.current.position.lerp(targetPosRef.current, delta * 12);
+        // Smooth yaw (facing) interpolation — handles wrap-around correctly
+        const dy = targetYawRef.current - currentYawRef.current;
+        // Normalize to [-PI, PI] to prevent 360° spin
+        const normalizedDy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        currentYawRef.current += normalizedDy * delta * 8;
       }
+
+      // Apply flat orientation: always horizontal, always facing camera
+      ringRef.current.rotation.set(0, currentYawRef.current, 0);
+
+      // Update global cursor target for XRPlacedProduct to read
+      globalCursorTarget.copy(ringRef.current.position);
+    } else {
+      ringRef.current.visible = false;
+    }
+
+    // Spin the reticle ring independently on the XZ plane
+    if (reticleRef.current && isTrackingRef.current) {
+      reticleRef.current.rotation.z -= delta * 0.6;
     }
   });
 
-  const lastPlacedTime = useRef(0);
-
-  // Calculate a position in front of the camera (fallback when no surface detected)
-  const getFallbackPosition = useCallback(() => {
-    const direction = cameraDirRef.current.clone();
-    direction.y = 0;
-    if (direction.lengthSq() > 0) {
-      direction.normalize();
-    } else {
-      direction.set(0, 0, -1);
-    }
-    const position = cameraPosRef.current.clone();
-    position.add(direction.multiplyScalar(1.5));
-    position.y -= 1.0;
-    return position.toArray();
-  }, []);
-
-  // Get the current ring position or fallback
-  const getCurrentTargetPosition = useCallback(() => {
-    if (ringRef.current && ringRef.current.visible) {
-      return ringRef.current.position.toArray();
-    }
-    return getFallbackPosition();
-  }, [getFallbackPosition]);
-
-  const handleTapToPlace = useCallback(() => {
-    if (!activeProduct) return;
-
-    // Wait a brief moment (50ms) to see if an object was clicked.
-    // Native WebXR 'select' fires BEFORE React Three Fiber's 'onClick'.
-    setTimeout(() => {
-      // Debounce: prevent double-fire
-      const now = performance.now();
-      if (now - lastPlacedTime.current < 500) return;
-      
-      // Prevent environment tap if an object was just clicked (within 150ms)
-      if (window.lastObjectClickTime && now - window.lastObjectClickTime < 150) {
-        return; 
-      }
-
-      lastPlacedTime.current = now;
-
-      const targetPos = getCurrentTargetPosition();
-
-      if (interactionMode === 'place') {
-        // PLACE MODE: Create a new object at the cursor position
-        placeItem(
-          activeProduct,
-          targetPos,
-          [0, ringRef.current ? ringRef.current.rotation.y : 0, 0],
-          activeProduct.modelScale || [1, 1, 1]
-        );
-        if (navigator.vibrate) navigator.vibrate(50);
-        // placeItem() automatically switches to 'move' mode in the store
-      } else if (interactionMode === 'move' && activeItemId) {
-        // DROP MODE: The object is currently following the cursor. Tap to drop it in place!
-        // Save the final dropped position to the React store so it persists.
-        updateTransform(activeItemId, { position: globalCursorTarget.toArray() });
-        
-        // Lock it in by deselecting it and returning to placement mode.
-        const setPlacementMode = useARSceneStore.getState().setPlacementMode;
-        setPlacementMode();
-        if (navigator.vibrate) navigator.vibrate(40);
-      }
-    }, 50);
-  }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
-
-  // Use native WebXR 'select' event
-  useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
-
-  // Fallback: Listen for custom DOM event from the overlay
-  useEffect(() => {
-    const onArTap = () => handleTapToPlace();
-    window.addEventListener('ar-tap', onArTap);
-    return () => window.removeEventListener('ar-tap', onArTap);
-  }, [handleTapToPlace]);
-
-  const setStabilized = useARSceneStore((s) => s.setStabilized);
-  const isStabilized = useARSceneStore((s) => s.isStabilized);
-
+  // ── WebXR Hit Test ────────────────────────────────────────────────────────
   useXRHitTest((results, getWorldMatrix) => {
     if (!ringRef.current) return;
 
     if (results.length > 0) {
-      if (!isStabilized) {
-        setStabilized(true);
-      }
-      
+      if (!isStabilized) setStabilized(true);
+
       const success = getWorldMatrix(matrixHelper, results[0]);
       if (success) {
-        matrixHelper.decompose(
-          targetPosRef.current,
-          ringRef.current.quaternion,
-          new THREE.Vector3()
-        );
-        // Force the reticle to be flat on the ground.
-        ringRef.current.quaternion.identity();
-        
-        // Make the reticle (and hologram) face the camera like IKEA Place
-        if (camera) {
-          const dx = camera.position.x - targetPosRef.current.x;
-          const dz = camera.position.z - targetPosRef.current.z;
-          ringRef.current.rotation.y = Math.atan2(dx, dz);
-        }
+        // Extract hit position only (ignore rotation from hit-test — it's jittery)
+        const pos = new THREE.Vector3();
+        const q   = new THREE.Quaternion();
+        const sc  = new THREE.Vector3();
+        matrixHelper.decompose(pos, q, sc);
 
-        ringRef.current.scale.set(1, 1, 1);
+        targetPosRef.current.copy(pos);
+
+        // Calculate the facing angle: make the furniture look toward the camera
+        const dx = cameraPosRef.current.x - pos.x;
+        const dz = cameraPosRef.current.z - pos.z;
+        targetYawRef.current = Math.atan2(dx, dz);
+
         isTrackingRef.current = true;
       } else {
         isTrackingRef.current = false;
@@ -194,46 +141,92 @@ export default function XRHitTestCursor() {
     }
   }, 'viewer');
 
-  const crosshairRef = useRef();
+  // ── Fallback position in front of camera ─────────────────────────────────
+  const getFallbackPosition = useCallback(() => {
+    const dir = cameraDirRef.current.clone();
+    dir.y = 0;
+    if (dir.lengthSq() > 0) dir.normalize(); else dir.set(0, 0, -1);
+    const pos = cameraPosRef.current.clone();
+    pos.addScaledVector(dir, 1.5);
+    pos.y -= 1.0;
+    return pos.toArray();
+  }, []);
 
-  useFrame((state, delta) => {
-    // Add a slow, continuous "scanning" rotation to the segmented crosshair
-    if (crosshairRef.current && isTrackingRef.current) {
-      crosshairRef.current.rotation.z -= delta * 0.5;
+  const getCurrentTargetPosition = useCallback(() => {
+    if (ringRef.current && ringRef.current.visible) {
+      return ringRef.current.position.toArray();
     }
-  });
+    return getFallbackPosition();
+  }, [getFallbackPosition]);
 
-  // Show holographic preview only in placement mode
+  // ── Tap-to-Place ──────────────────────────────────────────────────────────
+  const handleTapToPlace = useCallback(() => {
+    if (!activeProduct) return;
+
+    // Wait 50ms so React Three Fiber's onClick can fire first on existing objects
+    setTimeout(() => {
+      const now = performance.now();
+      if (now - lastPlacedTime.current < 500) return;
+      if (window.lastObjectClickTime && now - window.lastObjectClickTime < 150) return;
+
+      lastPlacedTime.current = now;
+      const targetPos = getCurrentTargetPosition();
+
+      if (interactionMode === 'place') {
+        placeItem(
+          activeProduct,
+          targetPos,
+          [0, currentYawRef.current, 0],   // face camera at drop time
+          activeProduct.modelScale || [1, 1, 1]
+        );
+        if (navigator.vibrate) navigator.vibrate(50);
+
+      } else if (interactionMode === 'move' && activeItemId) {
+        updateTransform(activeItemId, { position: globalCursorTarget.toArray() });
+        useARSceneStore.getState().setPlacementMode();
+        if (navigator.vibrate) navigator.vibrate(40);
+      }
+    }, 50);
+  }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
+
+  useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
+
+  useEffect(() => {
+    const onArTap = () => handleTapToPlace();
+    window.addEventListener('ar-tap', onArTap);
+    return () => window.removeEventListener('ar-tap', onArTap);
+  }, [handleTapToPlace]);
+
+  // ── Reticle color ─────────────────────────────────────────────────────────
+  const color = interactionMode === 'place' ? '#00cec9' : '#6c5ce7';
   const showPreview = interactionMode === 'place' && activeProduct;
 
+  // ── JSX ───────────────────────────────────────────────────────────────────
   return (
+    // ringRef: root group — positioned & oriented on the floor
     <group ref={ringRef} visible={false}>
-      {/* 3D Holographic Preview — only visible in placement mode */}
+
+      {/* Holographic furniture preview (faces camera via parent rotation) */}
       {showPreview && (
         <Suspense fallback={null}>
           <CursorPreview product={activeProduct} />
         </Suspense>
       )}
 
-      {/* 4-Segmented Outer Ring (Crosshair style) with rotation animation */}
-      <group ref={crosshairRef} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Reticle: flat on the floor, independently spinning */}
+      <group ref={reticleRef} rotation={[-Math.PI / 2, 0, 0]}>
+        {/* 4 arc segments forming the IKEA-style crosshair */}
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} rotation={[0, 0, (Math.PI / 2) * i]}>
-            <ringGeometry args={[0.1, 0.15, 16, 1, 0.15, (Math.PI / 2) - 0.3]} />
-            <meshBasicMaterial 
-              color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-              transparent opacity={0.8} depthTest={false} 
-            />
+            <ringGeometry args={[0.10, 0.16, 24, 1, 0.2, (Math.PI / 2) - 0.4]} />
+            <meshBasicMaterial color={color} transparent opacity={0.85} depthTest={false} />
           </mesh>
         ))}
 
-        {/* Inner dot */}
+        {/* Centre dot */}
         <mesh>
-          <circleGeometry args={[0.025, 32]} />
-          <meshBasicMaterial 
-            color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-            transparent opacity={0.9} depthTest={false} 
-          />
+          <circleGeometry args={[0.022, 32]} />
+          <meshBasicMaterial color={color} transparent opacity={0.95} depthTest={false} />
         </mesh>
       </group>
     </group>
