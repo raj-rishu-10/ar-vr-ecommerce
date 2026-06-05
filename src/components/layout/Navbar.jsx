@@ -11,7 +11,6 @@ export default function Navbar() {
     { path: '/', label: 'Home' },
     { path: '/products', label: 'Shop' },
     { path: '/ar', label: 'Quick AR' },
-    { path: '/ar-multi', label: 'AI Room Designer' },
     { path: '/room-builder', label: 'Room Builder' },
     { path: '/scenes', label: 'Scenes' },
   ];

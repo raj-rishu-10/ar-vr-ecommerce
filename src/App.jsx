@@ -14,11 +14,10 @@ const Checkout = lazy(() => import('./pages/Checkout'));
 const SavedScenes = lazy(() => import('./pages/SavedScenes'));
 const Confirmation = lazy(() => import('./pages/Confirmation'));
 const ARRoomBuilder  = lazy(() => import('./pages/ARRoomBuilder'));
-const ARMultiViewer  = lazy(() => import('./pages/ARMultiViewer'));
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = ['/room-builder', '/ar', '/ar-multi'].includes(location.pathname);
+  const hideNavbar = ['/room-builder', '/ar'].includes(location.pathname);
 
   return (
     <>
@@ -34,7 +33,6 @@ function AppContent() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/scenes" element={<SavedScenes />} />
             <Route path="/room-builder" element={<ARRoomBuilder />} />
-            <Route path="/ar-multi" element={<ARMultiViewer />} />
             <Route path="/confirmation" element={<Confirmation />} />
           </Routes>
         </Suspense>
@@ -42,7 +40,6 @@ function AppContent() {
       <Routes>
         <Route path="/ar" element={null} />
         <Route path="/room-builder" element={null} />
-        <Route path="/ar-multi" element={null} />
         <Route path="*" element={<Footer />} />
       </Routes>
     </>
