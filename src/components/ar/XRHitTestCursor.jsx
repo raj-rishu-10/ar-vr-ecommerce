@@ -43,9 +43,25 @@ export default function XRHitTestCursor() {
   const cameraPosRef = useRef(new THREE.Vector3());
   const cameraDirRef = useRef(new THREE.Vector3());
 
-  useFrame(() => {
+  const targetPosRef = useRef(new THREE.Vector3());
+  const isTrackingRef = useRef(false);
+
+  useFrame((state, delta) => {
     camera.getWorldPosition(cameraPosRef.current);
     camera.getWorldDirection(cameraDirRef.current);
+
+    if (ringRef.current) {
+      if (isTrackingRef.current) {
+        if (!ringRef.current.visible) {
+          ringRef.current.position.copy(targetPosRef.current);
+          ringRef.current.visible = true;
+        } else {
+          ringRef.current.position.lerp(targetPosRef.current, delta * 15);
+        }
+      } else {
+        ringRef.current.visible = false;
+      }
+    }
   });
 
   const lastPlacedTime = useRef(0);
@@ -122,18 +138,18 @@ export default function XRHitTestCursor() {
       const success = getWorldMatrix(matrixHelper, results[0]);
       if (success) {
         matrixHelper.decompose(
-          ringRef.current.position,
+          targetPosRef.current,
           ringRef.current.quaternion,
           new THREE.Vector3()
         );
         ringRef.current.quaternion.identity();
         ringRef.current.scale.set(1, 1, 1);
-        ringRef.current.visible = true;
+        isTrackingRef.current = true;
       } else {
-        ringRef.current.visible = false;
+        isTrackingRef.current = false;
       }
     } else {
-      ringRef.current.visible = false;
+      isTrackingRef.current = false;
     }
   }, 'viewer');
 
