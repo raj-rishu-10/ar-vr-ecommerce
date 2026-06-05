@@ -177,6 +177,20 @@ export default function WebXREditor() {
     loadScene();
   }, []); // eslint-disable-line
 
+  // Prevent WebXR from placing objects when clicking on DOM UI
+  React.useEffect(() => {
+    const overlay = document.getElementById('ar-ui-overlay');
+    if (!overlay) return;
+    const handleBeforeXRSelect = (e) => {
+      // If the user clicked on anything inside these UI areas, stop the WebXR select event
+      if (e.target.closest('button, .item-tools, .product-carousel-container, .top-bar')) {
+        e.preventDefault();
+      }
+    };
+    overlay.addEventListener('beforexrselect', handleBeforeXRSelect);
+    return () => overlay.removeEventListener('beforexrselect', handleBeforeXRSelect);
+  }, []);
+
   const handleEnterAR = useCallback(async () => {
     try {
       const overlay = document.getElementById('ar-ui-overlay');
