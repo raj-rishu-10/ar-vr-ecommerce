@@ -479,24 +479,24 @@
   .ar-bottom-ui {
     flex-direction: column-reverse;
     align-items: stretch;
-    gap: 12px;
-    padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+    gap: 16px;
+    padding-bottom: max(env(safe-area-inset-bottom, 24px), 24px);
   }
   
   .ar-product-card {
     width: 100%;
     max-width: 100%;
-    padding: 20px;
-    border-radius: 28px;
-    gap: 16px;
+    padding: 24px 20px;
+    border-radius: 32px;
+    gap: 20px;
   }
   
   .ar-carousel-container {
-    width: auto;
+    width: fit-content;
     align-self: center;
     max-width: 100%;
-    padding: 10px 14px;
-    border-radius: 30px;
+    padding: 12px 16px;
+    border-radius: 32px;
     flex-direction: row;
     align-items: center;
   }
@@ -506,49 +506,80 @@
   }
 
   .ar-carousel {
-    gap: 10px;
+    gap: 12px;
     padding-bottom: 0;
   }
   
   .ar-product-header {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 16px;
   }
 
   .ar-product-title {
-    font-size: 22px;
+    font-size: 24px;
+    line-height: 1.2;
+    flex: 1;
   }
   
   .ar-product-price {
     font-size: 18px;
-    padding: 4px 12px;
+    padding: 6px 14px;
+    white-space: nowrap;
   }
 
   .ar-product-dims {
-    gap: 8px;
+    gap: 12px;
   }
 
   .dim-item {
-    padding: 10px;
-    border-radius: 14px;
+    padding: 12px 8px;
+    border-radius: 16px;
   }
   
+  .ar-product-actions {
+    display: flex;
+    gap: 12px;
+    flex-direction: row;
+  }
+
   .primary-btn, .secondary-btn {
-    padding: 14px;
+    padding: 14px 12px;
     font-size: 14px;
-    border-radius: 14px;
+    border-radius: 16px;
+    white-space: nowrap;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px; /* slightly smaller gap to prevent wrapping */
   }
   
   .carousel-item {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
   }
   
   .dim-toggle-btn {
-    padding: 12px;
-    font-size: 13px;
-    border-radius: 12px;
+    padding: 14px;
+    font-size: 14px;
+    border-radius: 16px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 380px) {
+  .ar-product-actions {
+    flex-direction: column;
+  }
+  
+  .ar-product-title {
+    font-size: 22px;
+  }
+
+  .primary-btn, .secondary-btn {
+    width: 100%;
   }
 }
