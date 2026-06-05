@@ -198,19 +198,24 @@ export default function XRHitTestCursor() {
         </Suspense>
       )}
 
-      {/* Outer ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.15, 0.2, 32]} />
-        <meshBasicMaterial 
-          color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-          transparent opacity={0.8} depthTest={false} 
-        />
-      </mesh>
+      {/* 4-Segmented Outer Ring (Crosshair style) */}
+      {[0, 1, 2, 3].map((i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, (Math.PI / 2) * i]}>
+          <ringGeometry args={[0.1, 0.15, 16, 1, 0.15, (Math.PI / 2) - 0.3]} />
+          <meshBasicMaterial 
+            color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
+            transparent opacity={0.8} depthTest={false} 
+          />
+        </mesh>
+      ))}
 
       {/* Inner dot */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.03, 32]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} depthTest={false} />
+        <circleGeometry args={[0.025, 32]} />
+        <meshBasicMaterial 
+          color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
+          transparent opacity={0.9} depthTest={false} 
+        />
       </mesh>
     </group>
   );
