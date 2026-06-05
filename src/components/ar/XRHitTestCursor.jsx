@@ -186,6 +186,15 @@ export default function XRHitTestCursor() {
     }
   }, 'viewer');
 
+  const crosshairRef = useRef();
+
+  useFrame((state, delta) => {
+    // Add a slow, continuous "scanning" rotation to the segmented crosshair
+    if (crosshairRef.current && isTrackingRef.current) {
+      crosshairRef.current.rotation.z -= delta * 0.5;
+    }
+  });
+
   // Show holographic preview only in placement mode
   const showPreview = interactionMode === 'place' && activeProduct;
 
@@ -198,25 +207,27 @@ export default function XRHitTestCursor() {
         </Suspense>
       )}
 
-      {/* 4-Segmented Outer Ring (Crosshair style) */}
-      {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, (Math.PI / 2) * i]}>
-          <ringGeometry args={[0.1, 0.15, 16, 1, 0.15, (Math.PI / 2) - 0.3]} />
+      {/* 4-Segmented Outer Ring (Crosshair style) with rotation animation */}
+      <group ref={crosshairRef} rotation={[-Math.PI / 2, 0, 0]}>
+        {[0, 1, 2, 3].map((i) => (
+          <mesh key={i} rotation={[0, 0, (Math.PI / 2) * i]}>
+            <ringGeometry args={[0.1, 0.15, 16, 1, 0.15, (Math.PI / 2) - 0.3]} />
+            <meshBasicMaterial 
+              color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
+              transparent opacity={0.8} depthTest={false} 
+            />
+          </mesh>
+        ))}
+
+        {/* Inner dot */}
+        <mesh>
+          <circleGeometry args={[0.025, 32]} />
           <meshBasicMaterial 
             color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-            transparent opacity={0.8} depthTest={false} 
+            transparent opacity={0.9} depthTest={false} 
           />
         </mesh>
-      ))}
-
-      {/* Inner dot */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.025, 32]} />
-        <meshBasicMaterial 
-          color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-          transparent opacity={0.9} depthTest={false} 
-        />
-      </mesh>
+      </group>
     </group>
   );
 }
