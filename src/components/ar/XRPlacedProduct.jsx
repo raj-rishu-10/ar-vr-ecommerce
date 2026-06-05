@@ -3,6 +3,7 @@ import { useGLTF, Center } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useARSceneStore } from '../../store/useARSceneStore';
 import * as THREE from 'three';
+import { globalCursorTarget } from './XRHitTestCursor';
 
 export default function XRPlacedProduct({ item }) {
   const { scene } = useGLTF(item.product.glbModel);
@@ -34,11 +35,16 @@ export default function XRPlacedProduct({ item }) {
   const currentScale = useRef(new THREE.Vector3(0.01, 0.01, 0.01));
   const targetScale = useMemo(() => new THREE.Vector3(...(item.scale || [1, 1, 1])), [item.scale]);
 
-  // Pop-in animation
+  // Pop-in animation & Dragging logic
   useFrame((state, delta) => {
     if (groupRef.current) {
       currentScale.current.lerp(targetScale, Math.min(delta * 10, 1));
       groupRef.current.scale.copy(currentScale.current);
+
+      // Drag without React re-renders!
+      if (isSelected && useARSceneStore.getState().interactionMode === 'move') {
+        groupRef.current.position.lerp(globalCursorTarget, delta * 15);
+      }
     }
   });
 

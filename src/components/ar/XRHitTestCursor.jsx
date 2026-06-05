@@ -30,6 +30,8 @@ function CursorPreview({ product }) {
   );
 }
 
+export const globalCursorTarget = new THREE.Vector3();
+
 export default function XRHitTestCursor() {
   const ringRef = useRef();
   const placeItem = useARSceneStore((s) => s.placeItem);
@@ -59,11 +61,8 @@ export default function XRHitTestCursor() {
           ringRef.current.position.lerp(targetPosRef.current, delta * 15);
         }
         
-        // --- DRAG / MOVE LOGIC ---
-        // If an item is selected and we are in move mode, make it follow the cursor smoothly!
-        if (interactionMode === 'move' && activeItemId) {
-          updateTransform(activeItemId, { position: ringRef.current.position.toArray() });
-        }
+        // Expose the raw position for XRPlacedProduct to read directly without triggering React re-renders!
+        globalCursorTarget.copy(ringRef.current.position);
       } else {
         ringRef.current.visible = false;
       }
@@ -116,11 +115,14 @@ export default function XRHitTestCursor() {
       // placeItem() automatically switches to 'move' mode in the store
     } else if (interactionMode === 'move' && activeItemId) {
       // DROP MODE: The object is currently following the cursor. Tap to drop it in place!
-      // We lock it in by deselecting it and returning to placement mode.
+      // Save the final dropped position to the React store so it persists.
+      updateTransform(activeItemId, { position: globalCursorTarget.toArray() });
+      
+      // Lock it in by deselecting it and returning to placement mode.
       const setPlacementMode = useARSceneStore.getState().setPlacementMode;
       setPlacementMode();
     }
-  }, [activeProduct, interactionMode, activeItemId, placeItem, getCurrentTargetPosition]);
+  }, [activeProduct, interactionMode, activeItemId, placeItem, updateTransform, getCurrentTargetPosition]);
 
   // Use native WebXR 'select' event
   useXRInputSourceEvent('all', 'select', handleTapToPlace, [handleTapToPlace]);
