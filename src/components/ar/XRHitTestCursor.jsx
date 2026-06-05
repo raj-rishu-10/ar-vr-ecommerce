@@ -203,14 +203,14 @@ export default function XRHitTestCursor() {
         <ringGeometry args={[0.15, 0.2, 32]} />
         <meshBasicMaterial 
           color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-          transparent opacity={0.8} 
+          transparent opacity={0.8} depthTest={false} 
         />
       </mesh>
 
       {/* Inner dot */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.03, 32]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} depthTest={false} />
       </mesh>
     </group>
   );
