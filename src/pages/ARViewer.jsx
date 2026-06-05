@@ -139,50 +139,6 @@ export default function ARViewer() {
 
   return (
     <div className="ar-fullscreen-page">
-      
-      {/* ── Top Navigation Bar ───────────────────────────────── */}
-      <div className="ar-top-nav">
-        <button
-          onClick={() => navigate(-1)}
-          className="ar-btn-back"
-        >←</button>
-
-        <div className="ar-status-indicator">
-          <span className={`ar-status-dot ${isLoading ? 'loading' : 'ready'}`} />
-          {isLoading ? 'Loading 3D...' : 'Interactive 3D Viewer'}
-        </div>
-
-        {cartCount > 0 ? (
-          <motion.button
-            initial={{ scale: 0 }} animate={{ scale: 1 }}
-            onClick={handleCheckout}
-            className="ar-btn-cart"
-          >
-            🛒 {cartCount}
-          </motion.button>
-        ) : <div />}
-      </div>
-
-      {/* ── Persistent Product Info & Dimensions ────────────────── */}
-      <div className="ar-persistent-info">
-        <h3 className="ar-info-title">{activeProduct.name}</h3>
-        <span className="ar-info-price">${activeProduct.price}</span>
-        
-        <div className="ar-dimensions-box">
-          <div className="dim-label">DIMENSIONS (W×H×D)</div>
-          <div className="dim-value">
-            {activeProduct.dimensions?.width} × {activeProduct.dimensions?.height} × {activeProduct.dimensions?.depth} cm
-          </div>
-        </div>
-
-        <button 
-          className={`ar-btn-toggle-scale ${show3DScale ? 'active' : ''}`}
-          onClick={() => setShow3DScale(!show3DScale)}
-        >
-          {show3DScale ? 'Hide 3D Scale' : '📏 Show 3D Scale'}
-        </button>
-      </div>
-
       {/* ── 3D Model Viewer ─────────────────────────────────── */}
       <model-viewer
         ref={mvRef}
@@ -205,60 +161,136 @@ export default function ARViewer() {
         interaction-prompt="none"
         className="ar-model-viewer"
       >
-        <button slot="ar-button"   className="extracted-ui-55"/>
+        <button slot="ar-button" style={{ display: 'none' }} />
 
         {show3DScale && modelDims && (
           <>
             {/* SVG Overlay for Lines */}
             <svg className="dim-svg-overlay" xmlns="http://www.w3.org/2000/svg" ref={svgRef}>
-              <defs>
-                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                  <path d="M 0 0 L 6 3 L 0 6 z" fill="#0058a3" />
-                </marker>
-                <marker id="arrowtail" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                  <path d="M 6 0 L 0 3 L 6 6 z" fill="#0058a3" />
-                </marker>
-              </defs>
-              <line ref={lineWRef} className="dim-svg-line" markerStart="url(#arrowtail)" markerEnd="url(#arrowhead)" />
-              <line ref={lineHRef} className="dim-svg-line" markerStart="url(#arrowtail)" markerEnd="url(#arrowhead)" />
-              <line ref={lineDRef} className="dim-svg-line" markerStart="url(#arrowtail)" markerEnd="url(#arrowhead)" />
+              <line ref={lineWRef} className="dim-svg-line" />
+              <line ref={lineHRef} className="dim-svg-line" />
+              <line ref={lineDRef} className="dim-svg-line" />
             </svg>
 
-            {/* Endpoints (Invisible, used to get screen coords) */}
+            {/* Endpoints */}
             <div slot="dot-A" className="hotspot-dot" data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}></div>
             <div slot="dot-B" className="hotspot-dot" data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}></div>
             <div slot="dot-D" className="hotspot-dot" data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y + modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}></div>
             <div slot="dot-F" className="hotspot-dot" data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z - modelDims.extents.z / 2}`}></div>
 
-            {/* Width (X-axis) - Midpoint */}
-            <div 
-              slot="hotspot-width" 
-              className="hotspot-dim" 
-              data-position={`${modelDims.center.x} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}
-            >
+            {/* Midpoints / Labels */}
+            <div slot="hotspot-width" className="hotspot-dim" data-position={`${modelDims.center.x} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z + modelDims.extents.z / 2}`}>
               <div className="hotspot-label">{activeProduct.dimensions?.width} cm</div>
             </div>
             
-            {/* Height (Y-axis) - Midpoint */}
-            <div 
-              slot="hotspot-height" 
-              className="hotspot-dim" 
-              data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y} ${modelDims.center.z + modelDims.extents.z / 2}`}
-            >
+            <div slot="hotspot-height" className="hotspot-dim" data-position={`${modelDims.center.x - modelDims.extents.x / 2} ${modelDims.center.y} ${modelDims.center.z + modelDims.extents.z / 2}`}>
               <div className="hotspot-label">{activeProduct.dimensions?.height} cm</div>
             </div>
 
-            {/* Depth (Z-axis) - Midpoint */}
-            <div 
-              slot="hotspot-depth" 
-              className="hotspot-dim" 
-              data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z}`}
-            >
+            <div slot="hotspot-depth" className="hotspot-dim" data-position={`${modelDims.center.x + modelDims.extents.x / 2} ${modelDims.center.y - modelDims.extents.y / 2} ${modelDims.center.z}`}>
               <div className="hotspot-label">{activeProduct.dimensions?.depth} cm</div>
             </div>
           </>
         )}
       </model-viewer>
+
+      {/* ── UI OVERLAY ─────────────────────────────────────── */}
+      <div className="ar-ui-layer">
+        
+        {/* Top Nav (Floating) */}
+        <div className="ar-top-nav">
+          <button className="icon-btn" onClick={() => navigate(-1)}>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          
+          <div className="status-pill">
+            <span className={`status-dot ${isLoading ? 'loading' : 'ready'}`} />
+            {isLoading ? 'Loading Model...' : 'Interactive 3D'}
+          </div>
+
+          {cartCount > 0 ? (
+            <motion.button
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              onClick={handleCheckout}
+              className="icon-btn cart-btn"
+            >
+              <span className="cart-icon">🛒</span>
+              <span className="cart-badge">{cartCount}</span>
+            </motion.button>
+          ) : <div style={{ width: 48 }} />}
+        </div>
+
+        {/* Bottom Area: Info & Carousel */}
+        <div className="ar-bottom-ui">
+          
+          {/* Left Side: Info & Actions */}
+          <div className="ar-product-card glass-panel">
+            <div className="ar-product-header">
+              <h1 className="ar-product-title">{activeProduct.name}</h1>
+              <span className="ar-product-price">${activeProduct.price}</span>
+            </div>
+            
+            <div className="ar-product-dims">
+              <div className="dim-item">
+                <span className="dim-label">W</span>
+                <span className="dim-val">{activeProduct.dimensions?.width}</span>
+              </div>
+              <div className="dim-item">
+                <span className="dim-label">H</span>
+                <span className="dim-val">{activeProduct.dimensions?.height}</span>
+              </div>
+              <div className="dim-item">
+                <span className="dim-label">D</span>
+                <span className="dim-val">{activeProduct.dimensions?.depth}</span>
+              </div>
+            </div>
+
+            <div className="ar-product-actions">
+              {arSupported !== false && (
+                <button 
+                  className={`primary-btn ${isLoading ? 'disabled' : ''}`} 
+                  onClick={activateAR}
+                  disabled={isLoading}
+                >
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  View in Room
+                </button>
+              )}
+              <button className="secondary-btn" onClick={handleAddToCart}>
+                Add to Cart
+              </button>
+            </div>
+            
+            <button 
+              className={`dim-toggle-btn ${show3DScale ? 'active' : ''}`} 
+              onClick={() => setShow3DScale(!show3DScale)}
+            >
+              {show3DScale ? 'Hide 3D Dimensions' : 'Show Dimensions in 3D'}
+            </button>
+          </div>
+
+          {/* Right Side: Carousel */}
+          <div className="ar-carousel-container glass-panel">
+            <h4 className="carousel-title">Similar Items</h4>
+            <div className="ar-carousel">
+              {AR_PRODUCTS.map((p) => (
+                <button 
+                  key={p.id} 
+                  className={`carousel-item ${activeProduct.id === p.id ? 'active' : ''}`} 
+                  onClick={() => handleSelectProduct(p)}
+                >
+                  <img src={p.image} alt={p.name} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
 
       {/* ── Overlays ────────────────────────────────────────── */}
       <AnimatePresence>
@@ -267,7 +299,7 @@ export default function ARViewer() {
             initial={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="ar-loading-overlay"
           >
-            <div className="spinner-border ar-spinner" />
+            <div className="ar-spinner" />
             <div className="ar-loading-text">Loading Premium Model...</div>
           </motion.div>
         )}
@@ -282,57 +314,10 @@ export default function ARViewer() {
             <button onClick={() => { setHasError(false); setIsLoading(true); }} className="ar-btn-retry">Retry</button>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* ── Bottom Controls ─────────────────────────────────── */}
-      <div className="ar-bottom-controls">
-        <div className="ar-controls-container">
-          
-          <div className="ar-actions-row">
-            {arSupported !== false && (
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={activateAR}
-                disabled={isLoading}
-                className={`ar-btn-action view-space ${isLoading ? 'disabled' : ''}`}
-              >
-                📱 View in Space
-              </motion.button>
-            )}
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={handleAddToCart}
-              className="ar-btn-action add-cart"
-            >
-              🛒 Add to Cart
-            </motion.button>
-          </div>
-
-          <div className="ar-more-products">
-            <div className="ar-more-title">
-              More Products
-            </div>
-            <div className="ar-carousel">
-              {AR_PRODUCTS.map((p) => (
-                <motion.button
-                  key={p.id}
-                  onClick={() => handleSelectProduct(p)}
-                  whileTap={{ scale: 0.95 }}
-                  className={`ar-carousel-item ${activeProduct.id === p.id ? 'active' : ''}`}
-                >
-                  <img src={p.image} alt={p.name} className="ar-carousel-img" />
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Toast ───────────────────────────────────────────── */}
-      <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
             className="ar-toast"
