@@ -137,6 +137,13 @@ export default function ARViewer() {
 
   const cartCount = items.reduce((s, i) => s + i.qty, 0);
 
+  const switcherRef = useRef(null);
+  const scrollSwitcher = useCallback((dir) => {
+    if (switcherRef.current) {
+      switcherRef.current.scrollBy({ left: dir * 150, behavior: 'smooth' });
+    }
+  }, []);
+
   return (
     <div className="ar-fullscreen-page">
       {/* ── 3D Model Viewer ─────────────────────────────────── */}
@@ -247,17 +254,35 @@ export default function ARViewer() {
               </div>
             </div>
 
-            <div className="ar-product-switcher">
-              {AR_PRODUCTS.map((p) => (
-                <button
-                  key={p.id}
-                  className={`switcher-thumb ${activeProduct.id === p.id ? 'active' : ''}`}
-                  onClick={() => handleSelectProduct(p)}
-                  aria-label={`Switch to ${p.name}`}
-                >
-                  <img src={p.image} alt={p.name} />
+            <div className="ar-switcher-wrapper">
+              {AR_PRODUCTS.length > 4 && (
+                <button className="switcher-arrow left" onClick={() => scrollSwitcher(-1)} aria-label="Scroll left">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
-              ))}
+              )}
+              
+              <div className="ar-product-switcher" ref={switcherRef}>
+                {AR_PRODUCTS.map((p) => (
+                  <button
+                    key={p.id}
+                    className={`switcher-thumb ${activeProduct.id === p.id ? 'active' : ''}`}
+                    onClick={() => handleSelectProduct(p)}
+                    aria-label={`Switch to ${p.name}`}
+                  >
+                    <img src={p.image} alt={p.name} />
+                  </button>
+                ))}
+              </div>
+
+              {AR_PRODUCTS.length > 4 && (
+                <button className="switcher-arrow right" onClick={() => scrollSwitcher(1)} aria-label="Scroll right">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             <div className="ar-product-actions">
