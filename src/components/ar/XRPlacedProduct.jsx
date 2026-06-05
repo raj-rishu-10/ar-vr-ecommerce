@@ -86,7 +86,7 @@ export default function XRPlacedProduct({ item }) {
       {isSelected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
           <ringGeometry args={[0.18, 0.22, 32]} />
-          <meshBasicMaterial color="#6c5ce7" transparent opacity={0.9} depthTest={false} />
+          <meshBasicMaterial color="#6c5ce7" transparent opacity={0.9} />
         </mesh>
       )}
     </group>

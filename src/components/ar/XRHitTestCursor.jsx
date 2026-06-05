@@ -174,7 +174,7 @@ export default function XRHitTestCursor() {
           ringRef.current.quaternion,
           new THREE.Vector3()
         );
-        ringRef.current.quaternion.identity();
+        // Removed quaternion.identity() to allow the reticle to align to the physical surface normal
         ringRef.current.scale.set(1, 1, 1);
         isTrackingRef.current = true;
       } else {
@@ -202,14 +202,14 @@ export default function XRHitTestCursor() {
         <ringGeometry args={[0.15, 0.2, 32]} />
         <meshBasicMaterial 
           color={interactionMode === 'place' ? '#00cec9' : '#6c5ce7'} 
-          transparent opacity={0.8} depthTest={false} 
+          transparent opacity={0.8} 
         />
       </mesh>
 
       {/* Inner dot */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.03, 32]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} depthTest={false} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} />
       </mesh>
     </group>
   );
