@@ -10,11 +10,14 @@ export default function XRPlacedProduct({ item }) {
   // Clone the scene so we can place multiple of the same object
   const clone = useMemo(() => {
     const cl = scene.clone(true);
-    // Enable shadows on all meshes in the model
+    // Enable shadows and independent materials on all meshes in the model
     cl.traverse((node) => {
       if (node.isMesh) {
         node.castShadow = true;
         node.receiveShadow = true;
+        if (node.material) {
+          node.material = node.material.clone();
+        }
       }
     });
     return cl;
@@ -56,7 +59,7 @@ export default function XRPlacedProduct({ item }) {
       }
 
       // Ghosting effect
-      scene.traverse((node) => {
+      clone.traverse((node) => {
         if (node.isMesh && node.material) {
           node.material.transparent = true;
           // Smoothly lerp opacity down to 0.5 when dragging
