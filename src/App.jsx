@@ -13,11 +13,12 @@ const ARViewer = lazy(() => import('./pages/ARViewer'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Confirmation = lazy(() => import('./pages/Confirmation'));
 const ARRoomBuilder  = lazy(() => import('./pages/ARRoomBuilder'));
+const WebXREditor  = lazy(() => import('./components/ar/WebXREditor'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = ['/room-builder', '/ar'].includes(location.pathname);
+  const hideNavbar = ['/room-builder', '/ar', '/ar-multi'].includes(location.pathname);
 
   return (
     <>
@@ -32,6 +33,7 @@ function AppContent() {
             <Route path="/ar" element={<ARViewer />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/room-builder" element={<ARRoomBuilder />} />
+            <Route path="/ar-multi" element={<WebXREditor />} />
             <Route path="/confirmation" element={<Confirmation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -40,6 +42,7 @@ function AppContent() {
       <Routes>
         <Route path="/ar" element={null} />
         <Route path="/room-builder" element={null} />
+        <Route path="/ar-multi" element={null} />
         <Route path="*" element={<Footer />} />
       </Routes>
     </>
