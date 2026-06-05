@@ -247,6 +247,19 @@ export default function ARViewer() {
               </div>
             </div>
 
+            <div className="ar-product-switcher">
+              {AR_PRODUCTS.map((p) => (
+                <button
+                  key={p.id}
+                  className={`switcher-thumb ${activeProduct.id === p.id ? 'active' : ''}`}
+                  onClick={() => handleSelectProduct(p)}
+                  aria-label={`Switch to ${p.name}`}
+                >
+                  <img src={p.image} alt={p.name} />
+                </button>
+              ))}
+            </div>
+
             <div className="ar-product-actions">
               {arSupported !== false && (
                 <button 
