@@ -174,7 +174,8 @@ export default function XRHitTestCursor() {
           ringRef.current.quaternion,
           new THREE.Vector3()
         );
-        // Removed quaternion.identity() to allow the reticle to align to the physical surface normal
+        // Force the reticle to be flat. HitTest rotations are notoriously jittery on the Y-axis.
+        ringRef.current.quaternion.identity();
         ringRef.current.scale.set(1, 1, 1);
         isTrackingRef.current = true;
       } else {
