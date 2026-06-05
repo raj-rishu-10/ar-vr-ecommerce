@@ -272,23 +272,6 @@ export default function ARViewer() {
               {show3DScale ? 'Hide 3D Dimensions' : 'Show Dimensions in 3D'}
             </button>
           </div>
-
-          {/* Right Side: Carousel */}
-          <div className="ar-carousel-container glass-panel">
-            <h4 className="carousel-title">Similar Items</h4>
-            <div className="ar-carousel">
-              {AR_PRODUCTS.map((p) => (
-                <button 
-                  key={p.id} 
-                  className={`carousel-item ${activeProduct.id === p.id ? 'active' : ''}`} 
-                  onClick={() => handleSelectProduct(p)}
-                >
-                  <img src={p.image} alt={p.name} />
-                </button>
-              ))}
-            </div>
-          </div>
-
         </div>
       </div>
 

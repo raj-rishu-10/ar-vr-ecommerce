@@ -472,6 +472,11 @@
 
 /* Responsive */
 @media (max-width: 900px) {
+  .ar-model-viewer {
+    height: 55%; /* Centers the model in the top 55% of the screen */
+    transform: translateY(5%); /* Slight adjustment downwards to balance */
+  }
+
   .ar-ui-layer {
     padding: max(env(safe-area-inset-top, 16px), 16px) 16px 0;
   }
