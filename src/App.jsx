@@ -13,6 +13,7 @@ const ARViewer = lazy(() => import('./pages/ARViewer'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Confirmation = lazy(() => import('./pages/Confirmation'));
 const ARRoomBuilder  = lazy(() => import('./pages/ARRoomBuilder'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function AppContent() {
   const location = useLocation();
@@ -32,6 +33,7 @@ function AppContent() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/room-builder" element={<ARRoomBuilder />} />
             <Route path="/confirmation" element={<Confirmation />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </AnimatePresence>
