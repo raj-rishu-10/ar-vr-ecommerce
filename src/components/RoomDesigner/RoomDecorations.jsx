@@ -58,8 +58,8 @@ export default function RoomDecorations() {
           </mesh>
 
           {/* Curtain Rod */}
-          <mesh position={[0, height - 0.4, 0.15]}>
-            <cylinderGeometry args={[0.02, 0.02, 3.8]} rotation={[0, 0, Math.PI / 2]} />
+          <mesh position={[0, height - 0.4, 0.15]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.02, 0.02, 3.8]} />
             <meshStandardMaterial color="#333333" metalness={0.8} roughness={0.2} />
           </mesh>
 

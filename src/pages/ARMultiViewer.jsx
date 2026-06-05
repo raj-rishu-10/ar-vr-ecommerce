@@ -3,7 +3,7 @@ import React, { Suspense, useRef, useState, useCallback, useEffect } from 'react
 // Demo room photo URL for browser-based testing (bypasses OS file picker)
 const DEMO_ROOM_URL = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, Clone, Html, Environment, OrbitControls } from '@react-three/drei';
+import { useGLTF, Clone, Html, OrbitControls } from '@react-three/drei';
 import { XR, createXRStore, useXR, XRHitTest } from '@react-three/xr';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
@@ -41,15 +41,16 @@ function Reticle({ hitRef }) {
 }
 
 /* ── Single placed item ─────────────────────────────────── */
-function PlacedItem({ item, isSelected, onSelect, onRemove, ghost }) {
+function PlacedItem({ item, isSelected, onSelect, onRemove, onUpdate, onDuplicate, ghost }) {
   const { scene } = useGLTF(item.glbModel || item.product?.glbModel);
   const box = React.useMemo(() => new THREE.Box3().setFromObject(scene), [scene]);
   const sz = new THREE.Vector3(); box.getSize(sz);
   const pos = item.position || [0, 0, 0];
   const rotY = item.rotationY || 0;
+  const scale = item.scale || 1;
 
   return (
-    <group position={pos} rotation={[0, rotY, 0]}
+    <group position={pos} rotation={[0, rotY, 0]} scale={[scale, scale, scale]}
       onClick={e => { e.stopPropagation(); if (!ghost) onSelect(item.instanceId); }}>
       <Clone object={scene} castShadow receiveShadow />
       {ghost && (
@@ -65,14 +66,19 @@ function PlacedItem({ item, isSelected, onSelect, onRemove, ghost }) {
         </mesh>
       )}
       {isSelected && !ghost && (
-        <Html position={[0, sz.y + 0.3, 0]} center zIndexRange={[200, 0]}>
+        <Html position={[0, sz.y + 0.4, 0]} center zIndexRange={[200, 0]}>
           <div style={{ display: 'flex', gap: 6, background: 'rgba(10,10,20,0.9)', backdropFilter: 'blur(12px)', borderRadius: 32, padding: '8px 12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {[{ icon: '↺', label: 'Rotate', action: () => { item.rotationY = (item.rotationY || 0) + Math.PI / 4; } },
-              { icon: '🗑', label: 'Remove', action: () => onRemove(item.instanceId) }]
-              .map(b => (
+            {[
+              { icon: '✥', label: 'Move', action: () => onUpdate(item.instanceId, { isRepositioning: true }) },
+              { icon: '↺', label: 'Rotate', action: () => onUpdate(item.instanceId, { rotationY: rotY + Math.PI / 4 }) },
+              { icon: '＋', label: 'Scale Up', action: () => onUpdate(item.instanceId, { scale: scale * 1.1 }) },
+              { icon: '－', label: 'Scale Dn', action: () => onUpdate(item.instanceId, { scale: scale * 0.9 }) },
+              { icon: '⧉', label: 'Copy', action: () => onDuplicate(item.instanceId) },
+              { icon: '🗑', label: 'Delete', action: () => onRemove(item.instanceId) }
+            ].map(b => (
                 <button key={b.label} onClick={e => { e.stopPropagation(); b.action(); }}
-                  style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '4px 8px', fontSize: 16 }}>
-                  <span>{b.icon}</span><span style={{ fontSize: 8, fontWeight: 700 }}>{b.label}</span>
+                  style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '4px 6px', fontSize: 16 }}>
+                  <span>{b.icon}</span><span style={{ fontSize: 8, fontWeight: 700, whiteSpace: 'nowrap' }}>{b.label}</span>
                 </button>
               ))}
           </div>
@@ -83,19 +89,61 @@ function PlacedItem({ item, isSelected, onSelect, onRemove, ghost }) {
 }
 
 /* ── AR Scene ───────────────────────────────────────────── */
-function ARScene({ placed, setPlaced, activeId, setActiveId, pending, suggestions }) {
+function ARScene({ placed, setPlaced, activeId, setActiveId, pending, suggestions, setIsAR }) {
   const { isPresenting } = useXR();
   const hitRef = useRef(null);
+  
+  useEffect(() => {
+    if (setIsAR) setIsAR(isPresenting);
+  }, [isPresenting, setIsAR]);
+  
+  // Track the item currently being repositioned
+  const repositioningId = placed.find(i => i.isRepositioning)?.instanceId;
+
+  // Use useFrame to smoothly move the repositioning item with the reticle
+  useFrame(() => {
+    if (repositioningId && hitRef.current) {
+      const { hit, refSpace } = hitRef.current;
+      const pose = hit.getPose(refSpace);
+      if (pose) {
+        const m = new THREE.Matrix4().fromArray(pose.transform.matrix);
+        const pos = new THREE.Vector3().setFromMatrixPosition(m);
+        setPlaced(prev => prev.map(i => i.instanceId === repositioningId ? { ...i, position: [pos.x, pos.y, pos.z] } : i));
+      }
+    }
+  });
 
   const handleTap = useCallback(() => {
-    if (!isPresenting || !hitRef.current || !pending) return;
+    if (!isPresenting) return;
+    
+    // If we were repositioning an item, drop it here and finish repositioning
+    if (repositioningId) {
+      setPlaced(prev => prev.map(i => i.instanceId === repositioningId ? { ...i, isRepositioning: false } : i));
+      return;
+    }
+    
+    // Otherwise, normal placement of pending item
+    if (!hitRef.current || !pending) {
+      // If tapped empty space without reticle, just deselect
+      setActiveId(null);
+      return;
+    }
+    
     const { hit, refSpace } = hitRef.current;
     const pose = hit.getPose(refSpace);
     if (!pose) return;
     const m = new THREE.Matrix4().fromArray(pose.transform.matrix);
     const pos = new THREE.Vector3().setFromMatrixPosition(m);
-    setPlaced(prev => [...prev, { ...pending, instanceId: crypto.randomUUID(), position: [pos.x, pos.y, pos.z], rotationY: 0 }]);
-  }, [isPresenting, pending, setPlaced]);
+    
+    setPlaced(prev => [...prev, { ...pending, instanceId: crypto.randomUUID(), position: [pos.x, pos.y, pos.z], rotationY: 0, scale: 1 }]);
+  }, [isPresenting, pending, setPlaced, repositioningId, setActiveId]);
+
+  const updateItem = (id, updates) => setPlaced(prev => prev.map(i => i.instanceId === id ? { ...i, ...updates } : i));
+  const duplicateItem = (id) => setPlaced(prev => {
+    const item = prev.find(i => i.instanceId === id);
+    if (!item) return prev;
+    return [...prev, { ...item, instanceId: crypto.randomUUID(), position: [item.position[0] + 0.3, item.position[1], item.position[2] + 0.3] }];
+  });
 
   return (
     <>
@@ -111,8 +159,12 @@ function ARScene({ placed, setPlaced, activeId, setActiveId, pending, suggestion
       <Suspense fallback={null}>
         {placed.map(item => (
           <PlacedItem key={item.instanceId} item={item}
-            isSelected={activeId === item.instanceId} ghost={false}
-            onSelect={setActiveId} onRemove={id => setPlaced(p => p.filter(i => i.instanceId !== id))} />
+            isSelected={activeId === item.instanceId} ghost={item.isRepositioning}
+            onSelect={setActiveId} 
+            onRemove={id => { setPlaced(p => p.filter(i => i.instanceId !== id)); setActiveId(null); }}
+            onUpdate={updateItem}
+            onDuplicate={duplicateItem}
+          />
         ))}
         {!isPresenting && suggestions?.map(s => (
           <PlacedItem key={s.instanceId} item={{ ...s.product, instanceId: s.instanceId, position: s.position, rotationY: s.rotationY }}
@@ -161,10 +213,9 @@ export default function ARMultiViewer() {
   const [isAR, setIsAR]         = useState(false);
   const [toast, setToast]       = useState('');
   const [roomPhoto, setRoomPhoto] = useState(null);
-  const [showPipeline, setShowPipeline] = useState(false);
   const fileRef = useRef();
 
-  const { stages, results, isRunning, isDone, runPipeline, reset } = useAIPipeline(AR_PRODUCTS);
+  const { stages, results, isRunning, runPipeline, reset } = useAIPipeline(AR_PRODUCTS);
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -191,19 +242,21 @@ export default function ARMultiViewer() {
   const handleAnalyze = useCallback(async () => {
     if (!roomPhoto) return;
     setPhase('analyzing');
-    setShowPipeline(true);
     await runPipeline(roomPhoto);
     setPhase('preview');
     showToast('✅ AI analysis complete!');
   }, [roomPhoto, runPipeline]);
 
   // Auto-accept AI suggestions into preview
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
-    if (phase === 'preview' && results.suggestions?.length > 0 && placed.length === 0) {
-      const items = results.suggestions.map(s => ({
-        ...s.product, instanceId: s.instanceId, position: s.position, rotationY: s.rotationY,
-      }));
-      setPlaced(items);
+    if (phase === 'preview' && results.suggestions?.length > 0) {
+      setPlaced(prev => {
+        if (prev.length > 0) return prev;
+        return results.suggestions.map(s => ({
+          ...s.product, instanceId: s.instanceId, position: s.position, rotationY: s.rotationY,
+        }));
+      });
     }
   }, [phase, results.suggestions]);
 
@@ -311,10 +364,10 @@ export default function ARMultiViewer() {
 
   // ── PREVIEW + AR phase ───────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#0a0a0f', display: 'flex', flexDirection: 'column', fontFamily: "'Inter',system-ui,sans-serif", zIndex: 1100 }}>
+    <div style={{ position: 'fixed', inset: 0, background: isAR ? 'transparent' : '#0a0a0f', display: 'flex', flexDirection: 'column', fontFamily: "'Inter',system-ui,sans-serif", zIndex: 1100 }}>
 
       {/* Canvas */}
-      <Canvas style={{ flex: 1 }} camera={{ position: [0, 1.5, 4], fov: 60 }} gl={{ antialias: true }}>
+      <Canvas style={{ flex: 1 }} camera={{ position: [0, 1.5, 4], fov: 60 }} gl={{ antialias: true, alpha: true }}>
         <XR store={xrStore}>
           <ARScene
             placed={placed} setPlaced={setPlaced}
@@ -322,6 +375,7 @@ export default function ARMultiViewer() {
             setActiveId={id => setActiveId(p => p === id ? null : id)}
             pending={pending}
             suggestions={results.suggestions}
+            setIsAR={setIsAR}
           />
           {!isAR && (
             <>
